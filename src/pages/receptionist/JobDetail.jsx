@@ -291,7 +291,7 @@ export default function JobDetail() {
   const selectCls = "w-full bg-surface-600 border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none cursor-pointer"
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -318,7 +318,7 @@ export default function JobDetail() {
       <div className="space-y-4">
         {/* Job info */}
         <Section title="Job Info" icon={Wrench}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-slate-500 text-xs mb-0.5">Customer</p>
               <p className="text-white font-medium">{job.customers?.name}</p>
@@ -375,7 +375,7 @@ export default function JobDetail() {
           )}
 
           {isOpen && (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <select className={selectCls} value={selService} onChange={e => setSelService(e.target.value)}>
                   <option value="">Select service to add...</option>
@@ -388,9 +388,9 @@ export default function JobDetail() {
               <button
                 onClick={addService}
                 disabled={!selService}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
               >
-                <PlusCircle className="w-4 h-4" /> Add
+                <PlusCircle className="w-4 h-4" /> Add Service
               </button>
             </div>
           )}
@@ -424,7 +424,7 @@ export default function JobDetail() {
           )}
 
           {isOpen && (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <select className={selectCls} value={selPart} onChange={e => setSelPart(e.target.value)}>
                   <option value="">Select part to add...</option>
@@ -434,21 +434,23 @@ export default function JobDetail() {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={selQty}
-                onChange={e => setSelQty(Number(e.target.value))}
-                className="w-16 bg-surface-600 border border-white/[0.08] text-white rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <button
-                onClick={addPart}
-                disabled={!selPart}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
-              >
-                <PlusCircle className="w-4 h-4" /> Add
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={selQty}
+                  onChange={e => setSelQty(Number(e.target.value))}
+                  className="w-20 bg-surface-600 border border-white/[0.08] text-white rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <button
+                  onClick={addPart}
+                  disabled={!selPart}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
+                >
+                  <PlusCircle className="w-4 h-4" /> Add Part
+                </button>
+              </div>
             </div>
           )}
 

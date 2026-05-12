@@ -32,9 +32,9 @@ export default function ManagerJobs() {
   )
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">All Jobs</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">All Jobs</h1>
         <p className="text-slate-400 text-sm mt-0.5">{jobs.length} total jobs</p>
       </div>
 
@@ -56,7 +56,7 @@ export default function ManagerJobs() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-300 mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-1 text-sm text-slate-300 mb-1">
                     <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-500" />{job.customers?.name}</span>
                     <span className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-slate-500" />{job.vehicles?.make} {job.vehicles?.model}</span>
                     <span className="flex items-center gap-1.5"><Wrench className="w-3.5 h-3.5 text-slate-500" />{job.mechanics?.name}</span>

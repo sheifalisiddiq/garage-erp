@@ -59,7 +59,7 @@ function JobCard({ job, invoice, onClick }) {
           </div>
 
           {/* Customer & vehicle */}
-          <div className="flex items-center gap-4 text-sm text-slate-300 mb-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-1 text-sm text-slate-300 mb-1.5">
             <span className="flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-500" />
               {job.customers?.name}
@@ -178,19 +178,20 @@ export default function ReceptionistDashboard() {
   })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-slate-400 text-sm mt-0.5">Welcome back, {user?.name}</p>
         </div>
         <button
           onClick={() => navigate('/receptionist/new-job')}
-          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl transition shadow-lg shadow-brand-600/20"
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition shadow-lg shadow-brand-600/20 flex-shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
-          New Job
+          <span className="hidden sm:inline">New Job</span>
+          <span className="sm:hidden">New</span>
         </button>
       </div>
 
@@ -203,23 +204,32 @@ export default function ReceptionistDashboard() {
       </div>
 
       {/* Search + filter */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search by job #, customer, or plate..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-surface-700 border border-white/[0.06] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
+      <div className="flex flex-col gap-3 mb-4">
         <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search job #, customer, plate..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full bg-surface-700 border border-white/[0.06] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <button
+            onClick={fetchJobs}
+            className="p-2.5 bg-surface-700 border border-white/[0.06] rounded-xl text-slate-400 hover:text-white transition flex-shrink-0"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {['all', 'open', 'complete', 'paid', 'pending'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-2 rounded-xl text-xs font-medium capitalize transition ${
+              className={`px-3 py-2 rounded-xl text-xs font-medium capitalize transition flex-shrink-0 ${
                 filter === f
                   ? 'bg-brand-600 text-white'
                   : 'bg-surface-700 text-slate-400 hover:text-white border border-white/[0.06]'
@@ -229,13 +239,6 @@ export default function ReceptionistDashboard() {
             </button>
           ))}
         </div>
-        <button
-          onClick={fetchJobs}
-          className="p-2.5 bg-surface-700 border border-white/[0.06] rounded-xl text-slate-400 hover:text-white transition"
-          title="Refresh"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Job list */}

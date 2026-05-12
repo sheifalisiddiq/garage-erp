@@ -146,16 +146,16 @@ export default function ManagerDashboard() {
   )
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Manager Dashboard</h1>
-          <div className="flex items-center gap-3 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Manager Dashboard</h1>
+          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
             <p className="text-slate-400 text-sm">Welcome, {user?.name}</p>
             <LiveDot />
             {lastUpdated && (
-              <span className="text-xs text-slate-600">
+              <span className="text-xs text-slate-600 hidden sm:inline">
                 Updated {lastUpdated.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             )}
@@ -163,7 +163,7 @@ export default function ManagerDashboard() {
         </div>
         <button
           onClick={fetchData}
-          className="p-2.5 bg-surface-700 border border-white/[0.06] rounded-xl text-slate-400 hover:text-white transition"
+          className="p-2.5 bg-surface-700 border border-white/[0.06] rounded-xl text-slate-400 hover:text-white transition flex-shrink-0"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
