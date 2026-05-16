@@ -6,8 +6,12 @@ import ReceptionistDashboard from './pages/receptionist/Dashboard'
 import NewJob from './pages/receptionist/NewJob'
 import JobDetail from './pages/receptionist/JobDetail'
 import InvoiceList from './pages/receptionist/InvoiceList'
+import QuoteList from './pages/receptionist/QuoteList'
+import NewQuote from './pages/receptionist/NewQuote'
+import QuoteDetail from './pages/receptionist/QuoteDetail'
 import ManagerDashboard from './pages/manager/Dashboard'
 import ManagerJobs from './pages/manager/Jobs'
+import Inventory from './pages/manager/Inventory'
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user } = useAuth()
@@ -39,6 +43,15 @@ function AppRoutes() {
       <Route path="/receptionist/invoices" element={
         <ProtectedRoute requiredRole="receptionist"><InvoiceList /></ProtectedRoute>
       } />
+      <Route path="/receptionist/quotes" element={
+        <ProtectedRoute requiredRole="receptionist"><QuoteList /></ProtectedRoute>
+      } />
+      <Route path="/receptionist/quotes/new" element={
+        <ProtectedRoute requiredRole="receptionist"><NewQuote /></ProtectedRoute>
+      } />
+      <Route path="/receptionist/quotes/:id" element={
+        <ProtectedRoute requiredRole="receptionist"><QuoteDetail /></ProtectedRoute>
+      } />
 
       {/* Manager routes */}
       <Route path="/manager" element={
@@ -46,6 +59,15 @@ function AppRoutes() {
       } />
       <Route path="/manager/jobs" element={
         <ProtectedRoute requiredRole="manager"><ManagerJobs /></ProtectedRoute>
+      } />
+      <Route path="/manager/inventory" element={
+        <ProtectedRoute requiredRole="manager"><Inventory /></ProtectedRoute>
+      } />
+      <Route path="/manager/quotes" element={
+        <ProtectedRoute requiredRole="manager"><QuoteList /></ProtectedRoute>
+      } />
+      <Route path="/manager/quotes/:id" element={
+        <ProtectedRoute requiredRole="manager"><QuoteDetail /></ProtectedRoute>
       } />
 
       {/* Default */}

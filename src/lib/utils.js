@@ -52,3 +52,18 @@ export function statusColor(status) {
     default:       return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
   }
 }
+
+export function quoteStatusColor(status) {
+  switch (status) {
+    case 'draft':    return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
+    case 'sent':     return 'text-amber-400 bg-amber-400/10 border-amber-400/20'
+    case 'accepted': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
+    case 'expired':  return 'text-red-400 bg-red-400/10 border-red-400/20'
+    default:         return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
+  }
+}
+
+export function formatSignedAmount(n) {
+  const abs = Math.abs(n)
+  return (n >= 0 ? '+' : '−') + abs
+}

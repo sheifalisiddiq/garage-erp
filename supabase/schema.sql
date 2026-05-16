@@ -165,3 +165,83 @@ alter table jobs         disable row level security;
 alter table job_services disable row level security;
 alter table job_parts    disable row level security;
 alter table invoices     disable row level security;
+
+-- ─────────────────────────────────────────
+-- STOCK MOVEMENTS (inventory audit log)
+-- ─────────────────────────────────────────
+create table if not exists stock_movements (
+  id            uuid default uuid_generate_v4() primary key,
+  part_id       uuid references parts(id) on delete cascade,
+  change_amount integer not null,
+  reason        text not null,
+  notes         text,
+  created_by    text not null default 'system',
+  job_id        uuid references jobs(id) on delete set null,
+  created_at    timestamptz default now()
+);
+
+alter table stock_movements disable row level security;
+
+-- ─────────────────────────────────────────
+-- QUOTATIONS
+-- ─────────────────────────────────────────
+create table if not exists quotations (
+  id             uuid default uuid_generate_v4() primary key,
+  quote_number   text unique not null,
+  customer_name  text not null,
+  customer_phone text not null,
+  vehicle_info   text not null,
+  status         text default 'draft'
+                   check (status in ('draft','sent','accepted','expired')),
+  valid_days     integer default 7,
+  valid_until    date not null,
+  notes          text,
+  subtotal       numeric(10,2) default 0,
+  vat_amount     numeric(10,2) default 0,
+  total_amount   numeric(10,2) default 0,
+  created_by     text not null default 'system',
+  created_at     timestamptz default now(),
+  updated_at     timestamptz default now()
+);
+
+-- ─────────────────────────────────────────
+-- QUOTATION ITEMS (line items)
+-- ─────────────────────────────────────────
+create table if not exists quotation_items (
+  id           uuid default uuid_generate_v4() primary key,
+  quotation_id uuid references quotations(id) on delete cascade,
+  item_type    text not null check (item_type in ('service','part')),
+  item_name    text not null,
+  unit_cost    numeric(10,2) not null,
+  quantity     integer not null default 1,
+  line_total   numeric(10,2) generated always as (unit_cost * quantity) stored
+);
+
+alter table quotations      disable row level security;
+alter table quotation_items disable row level security;
+
+-- ─────────────────────────────────────────
+-- HELPER: atomic quote number generator
+-- ─────────────────────────────────────────
+create or replace function next_quote_number()
+returns text language plpgsql as $$
+declare
+  n integer;
+begin
+  select coalesce(max(cast(substring(quote_number from 5) as integer)), 0) + 1
+    into n from quotations;
+  return 'QUO-' || lpad(n::text, 4, '0');
+end;
+$$;
+
+-- ─────────────────────────────────────────
+-- HELPER: safe stock decrement (floors at 0)
+-- ─────────────────────────────────────────
+create or replace function decrement_part_stock(p_part_id uuid, p_qty integer)
+returns void language plpgsql as $$
+begin
+  update parts
+     set stock_level = greatest(0, stock_level - p_qty)
+   where id = p_part_id;
+end;
+$$;

@@ -43,6 +43,20 @@ export default function NewJob() {
   useEffect(() => {
     supabase.from('mechanics').select('*').eq('status', 'active').order('name')
       .then(({ data }) => setMechanics(data || []))
+
+    // Pre-fill from quote conversion
+    const prefill = sessionStorage.getItem('prefill_job')
+    if (prefill) {
+      try {
+        const data = JSON.parse(prefill)
+        setForm(f => ({
+          ...f,
+          customerName:  data.customerName  || f.customerName,
+          customerPhone: data.customerPhone || f.customerPhone,
+        }))
+      } catch (_) {}
+      sessionStorage.removeItem('prefill_job')
+    }
   }, [])
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))

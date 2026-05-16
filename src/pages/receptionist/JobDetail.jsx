@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import {
   formatAED, formatElapsed, elapsedSeconds,
   formatTime, formatDateTime, statusColor
@@ -142,6 +143,7 @@ function InvoiceSentModal({ invoice, job, onMarkPaid, onClose }) {
 export default function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [job, setJob] = useState(null)
   const [invoice, setInvoice] = useState(null)
@@ -248,6 +250,30 @@ export default function JobDetail() {
 
       if (invErr) throw invErr
       setInvoice(inv)
+
+      // Decrement stock for each part used in this job
+      if (jobParts.length > 0) {
+        const movements = []
+        for (const line of jobParts) {
+          if (!line.part_id) continue
+          await supabase.rpc('decrement_part_stock', {
+            p_part_id: line.part_id,
+            p_qty:     line.quantity,
+          })
+          movements.push({
+            part_id:       line.part_id,
+            change_amount: -line.quantity,
+            reason:        'job_usage',
+            notes:         `Auto-deducted on job completion: ${job.job_number}`,
+            created_by:    user?.name || 'system',
+            job_id:        id,
+          })
+        }
+        if (movements.length > 0) {
+          await supabase.from('stock_movements').insert(movements)
+        }
+      }
+
       await fetchJob()
       setShowModal(true)
     } catch (err) {

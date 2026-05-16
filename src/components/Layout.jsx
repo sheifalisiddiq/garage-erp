@@ -3,7 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
-  LogOut, Activity, Menu, X, ChevronRight
+  LogOut, Activity, Menu, X, ChevronRight,
+  Package, ClipboardList
 } from 'lucide-react'
 
 function SectionLabel({ children }) {
@@ -108,12 +109,17 @@ function SidebarContent({ onNavClick }) {
             <NavItem to="/receptionist" end icon={LayoutDashboard} label="Dashboard" onClick={onNavClick} />
             <NavItem to="/receptionist/new-job" icon={PlusCircle} label="New Job" onClick={onNavClick} />
             <NavItem to="/receptionist/invoices" icon={FileText} label="Invoices" onClick={onNavClick} />
+            <SectionLabel>Quotes</SectionLabel>
+            <NavItem to="/receptionist/quotes" icon={ClipboardList} label="Quotations" onClick={onNavClick} />
           </>
         ) : (
           <>
             <SectionLabel>Analytics</SectionLabel>
             <NavItem to="/manager" end icon={LayoutDashboard} label="Dashboard" onClick={onNavClick} />
             <NavItem to="/manager/jobs" icon={Activity} label="All Jobs" onClick={onNavClick} />
+            <SectionLabel>Operations</SectionLabel>
+            <NavItem to="/manager/inventory" icon={Package} label="Inventory" onClick={onNavClick} />
+            <NavItem to="/manager/quotes" icon={ClipboardList} label="Quotations" onClick={onNavClick} />
           </>
         )}
       </nav>
@@ -153,10 +159,13 @@ export default function Layout({ children }) {
   const navItems = isReceptionist ? [
     { to: '/receptionist', end: true, icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/receptionist/new-job', icon: PlusCircle, label: 'New Job' },
+    { to: '/receptionist/quotes', icon: ClipboardList, label: 'Quotes' },
     { to: '/receptionist/invoices', icon: FileText, label: 'Invoices' },
   ] : [
     { to: '/manager', end: true, icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/manager/jobs', icon: Activity, label: 'All Jobs' },
+    { to: '/manager/inventory', icon: Package, label: 'Inventory' },
+    { to: '/manager/quotes', icon: ClipboardList, label: 'Quotes' },
   ]
 
   return (
