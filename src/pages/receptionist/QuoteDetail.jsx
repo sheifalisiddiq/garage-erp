@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { formatAED, formatDate, formatDateTime, quoteStatusColor } from '../../lib/utils'
 import {
   ArrowLeft, Printer, CheckCircle2, Send, Clock,
-  XCircle, Wrench, Loader2, User, Car, FileText
+  XCircle, Wrench, Loader2, FileText, FileDown
 } from 'lucide-react'
 
 function Section({ title, icon: Icon, children }) {
@@ -34,9 +34,9 @@ export default function QuoteDetail() {
   const { user } = useAuth()
   const isReceptionist = user?.role === 'receptionist'
 
-  const [quote, setQuote] = useState(null)
+  const [quote, setQuote]       = useState(null)
   const [lineItems, setLineItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
   const [updating, setUpdating] = useState(false)
 
   const fetchQuote = useCallback(async () => {
@@ -49,9 +49,7 @@ export default function QuoteDetail() {
     setLoading(false)
   }, [id])
 
-  useEffect(() => {
-    fetchQuote()
-  }, [fetchQuote])
+  useEffect(() => { fetchQuote() }, [fetchQuote])
 
   const updateStatus = async (newStatus) => {
     setUpdating(true)
@@ -71,6 +69,13 @@ export default function QuoteDetail() {
     navigate('/receptionist/new-job')
   }
 
+  const handlePDF = () => {
+    const prevTitle = document.title
+    document.title = `${quote.quote_number} — Garage ERP`
+    window.print()
+    document.title = prevTitle
+  }
+
   const basePath = isReceptionist ? '/receptionist/quotes' : '/manager/quotes'
 
   if (loading) {
@@ -82,14 +87,12 @@ export default function QuoteDetail() {
   }
 
   if (!quote) {
-    return (
-      <div className="p-6 text-center text-slate-400">Quote not found.</div>
-    )
+    return <div className="p-6 text-center text-slate-400">Quote not found.</div>
   }
 
-  const isExpired = new Date(quote.valid_until) < new Date()
-  const services = lineItems.filter(i => i.item_type === 'service')
-  const parts = lineItems.filter(i => i.item_type === 'part')
+  const isExpired  = new Date(quote.valid_until) < new Date()
+  const services   = lineItems.filter(i => i.item_type === 'service')
+  const parts      = lineItems.filter(i => i.item_type === 'part')
 
   return (
     <>
@@ -110,16 +113,29 @@ export default function QuoteDetail() {
             </div>
             <p className="text-xs text-slate-500 mt-0.5">Created {formatDateTime(quote.created_at)} by {quote.created_by}</p>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-600 border border-white/[0.06] text-slate-300 hover:text-white text-sm font-medium transition"
-          >
-            <Printer className="w-4 h-4" />
-            Print
-          </button>
+
+          {/* Export buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-600 border border-white/[0.06] text-slate-300 hover:text-white text-sm font-medium transition"
+              title="Print"
+            >
+              <Printer className="w-4 h-4" />
+              <span className="hidden sm:inline">Print</span>
+            </button>
+            <button
+              onClick={handlePDF}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition"
+              title="Download PDF — choose 'Save as PDF' in the print dialog"
+            >
+              <FileDown className="w-4 h-4" />
+              <span className="hidden sm:inline">Download PDF</span>
+            </button>
+          </div>
         </div>
 
-        {/* Quote Info */}
+        {/* Quote Details */}
         <Section title="Quote Details" icon={FileText}>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -142,6 +158,12 @@ export default function QuoteDetail() {
               <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Validity</p>
               <p className="text-slate-300">{quote.valid_days} days</p>
             </div>
+            {quote.created_by && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Prepared By</p>
+                <p className="text-slate-300">{quote.created_by}</p>
+              </div>
+            )}
           </div>
           {quote.notes && (
             <div className="mt-4 p-3 bg-surface-600 rounded-xl text-sm text-slate-300">
@@ -156,6 +178,9 @@ export default function QuoteDetail() {
           <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
             <Wrench className="w-4 h-4 text-slate-400" />
             <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">Line Items</h3>
+            <span className="ml-auto text-xs text-slate-500">
+              {services.length} service{services.length !== 1 ? 's' : ''} · {parts.length} part{parts.length !== 1 ? 's' : ''}
+            </span>
           </div>
           <div className="p-5 space-y-1">
             {lineItems.length === 0 ? (
@@ -246,7 +271,7 @@ export default function QuoteDetail() {
                   Convert to Job
                 </button>
               )}
-              {(quote.status === 'expired') && (
+              {quote.status === 'expired' && (
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   <XCircle className="w-4 h-4" />
                   This quote has expired.
@@ -257,9 +282,9 @@ export default function QuoteDetail() {
         )}
       </div>
 
-      {/* ── Print layout ── */}
+      {/* ── Print / PDF layout ── */}
       <div className="hidden print:block p-10 bg-white text-black font-sans">
-        {/* Garage header */}
+        {/* Header */}
         <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-gray-200">
           <div>
             <h1 className="text-2xl font-black text-gray-900">Garage ERP</h1>
@@ -271,11 +296,12 @@ export default function QuoteDetail() {
             <div className="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-gray-100 text-gray-600 mt-1 capitalize">
               {quote.status}
             </div>
+            <p className="text-xs text-gray-400 mt-2">Issued: {formatDate(quote.created_at)}</p>
           </div>
         </div>
 
-        {/* Customer + Vehicle */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
+        {/* Customer + Vehicle + Meta */}
+        <div className="grid grid-cols-3 gap-8 mb-8">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Bill To</p>
             <p className="font-bold text-gray-900">{quote.customer_name}</p>
@@ -284,37 +310,72 @@ export default function QuoteDetail() {
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Vehicle</p>
             <p className="text-gray-700">{quote.vehicle_info}</p>
-            <p className="text-gray-400 text-sm mt-1">Valid until: {formatDate(quote.valid_until)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Quote Details</p>
+            <p className="text-gray-700 text-sm">Valid until: <span className="font-semibold">{formatDate(quote.valid_until)}</span></p>
+            <p className="text-gray-500 text-sm">Validity: {quote.valid_days} days</p>
+            {quote.created_by && <p className="text-gray-500 text-sm">Prepared by: {quote.created_by}</p>}
           </div>
         </div>
 
-        {/* Line items table */}
-        <table className="w-full text-sm mb-8">
-          <thead>
-            <tr className="border-b-2 border-gray-200">
-              <th className="text-left py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold w-1/2">Description</th>
-              <th className="text-center py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Type</th>
-              <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Qty</th>
-              <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Unit Price</th>
-              <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lineItems.map(item => (
-              <tr key={item.id} className="border-b border-gray-100">
-                <td className="py-2.5 font-medium text-gray-800">{item.item_name}</td>
-                <td className="py-2.5 text-center text-xs text-gray-500 capitalize">{item.item_type}</td>
-                <td className="py-2.5 text-right text-gray-600">{item.quantity}</td>
-                <td className="py-2.5 text-right text-gray-600">{formatAED(item.unit_cost)}</td>
-                <td className="py-2.5 text-right font-semibold text-gray-900">{formatAED(item.line_total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Services section */}
+        {services.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Services</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold w-1/2">Description</th>
+                  <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Qty</th>
+                  <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Unit Price</th>
+                  <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {services.map(item => (
+                  <tr key={item.id} className="border-b border-gray-100">
+                    <td className="py-2.5 font-medium text-gray-800">{item.item_name}</td>
+                    <td className="py-2.5 text-right text-gray-600">{item.quantity}</td>
+                    <td className="py-2.5 text-right text-gray-600">{formatAED(item.unit_cost)}</td>
+                    <td className="py-2.5 text-right font-semibold text-gray-900">{formatAED(item.line_total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Parts section */}
+        {parts.length > 0 && (
+          <div className="mb-8">
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Parts & Materials</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold w-1/2">Part</th>
+                  <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Qty</th>
+                  <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Unit Price</th>
+                  <th className="text-right py-2 text-xs text-gray-400 uppercase tracking-wider font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parts.map(item => (
+                  <tr key={item.id} className="border-b border-gray-100">
+                    <td className="py-2.5 font-medium text-gray-800">{item.item_name}</td>
+                    <td className="py-2.5 text-right text-gray-600">{item.quantity}</td>
+                    <td className="py-2.5 text-right text-gray-600">{formatAED(item.unit_cost)}</td>
+                    <td className="py-2.5 text-right font-semibold text-gray-900">{formatAED(item.line_total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Totals */}
-        <div className="flex justify-end">
-          <div className="w-64 space-y-2 text-sm">
+        <div className="flex justify-end mb-8">
+          <div className="w-72 space-y-2 text-sm">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
               <span>{formatAED(quote.subtotal)}</span>
@@ -324,7 +385,7 @@ export default function QuoteDetail() {
               <span>{formatAED(quote.vat_amount)}</span>
             </div>
             <div className="flex justify-between font-bold text-base text-gray-900 pt-2 border-t-2 border-gray-200">
-              <span>Total</span>
+              <span>Total (incl. VAT)</span>
               <span>{formatAED(quote.total_amount)}</span>
             </div>
           </div>
@@ -332,14 +393,14 @@ export default function QuoteDetail() {
 
         {/* Notes */}
         {quote.notes && (
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+          <div className="mb-8 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Notes</p>
             <p className="text-gray-700 text-sm">{quote.notes}</p>
           </div>
         )}
 
-        <div className="mt-10 pt-6 border-t border-gray-200 text-xs text-gray-400 text-center">
-          This quote is valid for {quote.valid_days} days from the date of issue. Prices are inclusive of 5% VAT.
+        <div className="pt-6 border-t border-gray-200 text-xs text-gray-400 text-center">
+          This quote is valid for {quote.valid_days} days from the date of issue · Prices are inclusive of 5% VAT · {quote.quote_number}
         </div>
       </div>
     </>
