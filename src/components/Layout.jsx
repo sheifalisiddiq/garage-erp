@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
@@ -118,14 +118,7 @@ function SidebarContent({ user, onNavClick, onLogout }) {
 }
 
 /* ── Top bar ─────────────────────────────────────────── */
-const TOP_TABS = ['Workshop', 'Customers', 'Tools']
-
 function TopBar({ theme, toggleTheme, onMenuOpen }) {
-  const location = useLocation()
-  const activeTab = location.pathname.includes('customer') ? 'Customers'
-    : location.pathname.includes('inventor') || location.pathname.includes('tools') ? 'Tools'
-    : 'Workshop'
-
   return (
     <header className="topbar">
       {/* Mobile hamburger */}
@@ -138,18 +131,6 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
       >
         <Menu size={16} />
       </button>
-
-      {/* Pill tabs */}
-      <div className="pill-group">
-        {TOP_TABS.map(tab => (
-          <button
-            key={tab}
-            className={'pill' + (activeTab === tab ? ' is-active' : '')}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
 
       {/* Search */}
       <div className="searchbar">
@@ -258,7 +239,6 @@ export default function Layout({ children }) {
       <style>{`
         @media (max-width: 880px) {
           #mobile-menu-btn { display: grid !important; }
-          .pill-group { display: none !important; }
           .searchbar { margin-left: 0 !important; }
         }
       `}</style>
