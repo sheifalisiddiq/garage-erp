@@ -25,7 +25,7 @@ function LiveTimer({ createdAt, completedAt }) {
     return () => clearInterval(t)
   }, [createdAt, completedAt])
   return (
-    <span className="font-mono text-blue-400 text-lg font-semibold">
+    <span className="font-mono text-lg font-semibold" style={{ color: 'var(--accent-400)' }}>
       {formatElapsed(secs)}
     </span>
   )
@@ -71,7 +71,7 @@ function InvoiceSentModal({ invoice, job, onMarkPaid, onClose }) {
             {[
               { icon: CheckCircle2, color: 'text-emerald-400', text: `Invoice ${invoice.invoice_number} created` },
               { icon: CheckCircle2, color: 'text-emerald-400', text: `Total: ${formatAED(invoice.total_amount)}` },
-              { icon: MessageSquare, color: 'text-blue-400', text: `SMS sent to ${job.customers?.phone}` },
+              { icon: MessageSquare, color: 'text-rose-400', text: `SMS sent to ${job.customers?.phone}` },
               ...(job.customers?.email ? [{ icon: Mail, color: 'text-purple-400', text: `Email sent to ${job.customers.email}` }] : []),
             ].map(({ icon: Icon, color, text }, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -367,7 +367,7 @@ export default function JobDetail() {
 
           {/* Timer */}
           <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center gap-3">
-            <Clock className={`w-5 h-5 ${isOpen ? 'text-blue-400' : 'text-slate-500'}`} />
+            <Clock className={`w-5 h-5 ${isOpen ? 'text-rose-400' : 'text-slate-500'}`} />
             <div>
               <p className="text-xs text-slate-500 mb-0.5">
                 {isOpen ? 'Elapsed time (live)' : `Completed · ${formatDateTime(job.completed_at)}`}
@@ -552,7 +552,7 @@ export default function JobDetail() {
                 </button>
                 <button
                   onClick={() => markPaidFromDetail('card')}
-                  className="flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition"
+                  className="flex items-center justify-center gap-2 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition"
                 >
                   <CreditCard className="w-4 h-4" /> Pay (Card)
                 </button>

@@ -14,19 +14,34 @@ function LiveTimer({ createdAt }) {
     const t = setInterval(() => setSecs(elapsedSeconds(createdAt)), 1000)
     return () => clearInterval(t)
   }, [createdAt])
-  return <span className="font-mono text-blue-400">{formatElapsed(secs)}</span>
+  return <span className="font-mono" style={{ color: 'var(--accent-400)' }}>{formatElapsed(secs)}</span>
 }
 
 function StatCard({ label, value, icon: Icon, color }) {
   return (
-    <div className="bg-surface-700 border border-white/[0.06] rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="w-4 h-4" />
+    <div style={{
+      background: 'var(--hero-grad)',
+      border: '1px solid var(--border)',
+      borderRadius: 22,
+      padding: 20,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Noise texture */}
+      <div style={{ position: 'absolute', inset: 0, background: 'var(--hero-noise)', opacity: 0.6, mixBlendMode: 'overlay', pointerEvents: 'none', borderRadius: 'inherit' }} />
+      {/* Bottom vignette */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(to bottom, transparent, rgba(5,7,14,0.78))', pointerEvents: 'none' }} />
+      {/* Accent glow decoration */}
+      <div style={{ position: 'absolute', right: -20, bottom: -20, width: 140, height: 120, background: 'radial-gradient(closest-side, rgba(var(--accent-glow)/0.12), transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{label}</p>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}>
+            <Icon className="w-4 h-4" />
+          </div>
         </div>
+        <p className="text-2xl font-bold text-white">{value}</p>
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
     </div>
   )
 }
@@ -86,7 +101,7 @@ function JobCard({ job, invoice, onClick }) {
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
           {isOpen ? (
             <div className="flex items-center gap-1.5 text-sm">
-              <Clock className="w-3.5 h-3.5 text-blue-400" />
+              <Clock className="w-3.5 h-3.5" style={{ color: 'var(--accent-400)' }} />
               <LiveTimer createdAt={job.created_at} />
             </div>
           ) : invoice ? (
@@ -197,7 +212,7 @@ export default function ReceptionistDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Active Jobs" value={openJobs.length} icon={Clock} color="bg-blue-500/10 text-blue-400" />
+        <StatCard label="Active Jobs" value={openJobs.length} icon={Clock} color="bg-brand-500/10 text-brand-300" />
         <StatCard label="Done Today" value={completedToday.length} icon={CheckCircle2} color="bg-emerald-500/10 text-emerald-400" />
         <StatCard label="Today's Revenue" value={formatAED(todayRevenue)} icon={() => <span className="text-gold-400 font-bold text-xs">AED</span>} color="bg-gold-500/10 text-gold-400" />
         <StatCard label="Pending Payment" value={pendingPayment} icon={AlertCircle} color="bg-amber-500/10 text-amber-400" />

@@ -48,7 +48,7 @@ export default {
       boxShadow: {
         card:          '0 1px 2px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
         'card-hover':  '0 4px 16px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4)',
-        'glow-brand':  '0 0 0 1px rgba(99,102,241,0.2), 0 4px 24px rgba(99,102,241,0.18)',
+        'glow-brand':  '0 0 0 1px rgba(225,29,72,0.2), 0 4px 24px rgba(225,29,72,0.18)',
         'glow-gold':   '0 0 0 1px rgba(251,191,36,0.15), 0 4px 24px rgba(245,158,11,0.14)',
         'glow-emerald':'0 0 0 1px rgba(16,185,129,0.15), 0 4px 24px rgba(16,185,129,0.14)',
         'glow-blue':   '0 0 0 1px rgba(59,130,246,0.15), 0 4px 24px rgba(59,130,246,0.14)',

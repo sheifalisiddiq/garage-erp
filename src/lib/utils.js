@@ -45,7 +45,7 @@ export function isToday(ts) {
 
 export function statusColor(status) {
   switch (status) {
-    case 'open':   return 'text-blue-400 bg-blue-400/10 border-blue-400/20'
+    case 'open':   return 'text-rose-400 bg-rose-400/10 border-rose-400/20'
     case 'complete': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
     case 'paid':   return 'text-gold-400 bg-gold-400/10 border-gold-400/20'
     case 'sent':   return 'text-amber-400 bg-amber-400/10 border-amber-400/20'

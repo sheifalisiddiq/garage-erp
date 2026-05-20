@@ -61,71 +61,84 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="card" style={{ padding: '28px 28px 24px' }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 22, letterSpacing: '-0.01em' }}>
-            Sign in to your workspace
-          </div>
+        <div className="card" style={{
+          padding: '28px 28px 24px',
+          background: 'var(--hero-grad)',
+        }}>
+          {/* Noise texture */}
+          <div style={{ position: 'absolute', inset: 0, background: 'var(--hero-noise)', opacity: 0.6, mixBlendMode: 'overlay', pointerEvents: 'none', borderRadius: 'inherit', zIndex: 0 }} />
+          {/* Bottom vignette */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(to bottom, transparent, rgba(5,7,14,0.85))', pointerEvents: 'none', zIndex: 0 }} />
+          {/* Accent glow */}
+          <div style={{ position: 'absolute', right: -40, bottom: -50, width: 220, height: 180, background: 'radial-gradient(closest-side, rgba(var(--accent-glow)/0.16), transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Role selector */}
-            <div>
-              <label className="form-label">Select your role</label>
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={role}
-                  onChange={e => setRole(e.target.value)}
-                  className="form-input"
-                  style={{ appearance: 'none', paddingRight: 36, cursor: 'pointer' }}
-                >
-                  <option value="receptionist">Receptionist</option>
-                  <option value="manager">Manager / Owner</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none' }}
-                />
-              </div>
+          {/* Content */}
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 22, letterSpacing: '-0.01em' }}>
+              Sign in to your workspace
             </div>
 
-            {/* Demo user preview */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: 'var(--pill-bg)', border: '1px solid var(--border)',
-              borderRadius: 12, padding: '10px 14px',
-            }}>
-              <div className="avatar sm">
-                {role === 'receptionist' ? 'MA' : 'SM'}
-              </div>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Role selector */}
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                  {role === 'receptionist' ? 'Mariam Al-Zaabi' : 'Saeed Al-Mansoori'}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
-                  {role === 'receptionist' ? 'Receptionist — Full job access' : 'Manager — Dashboard & reports'}
+                <label className="form-label">Select your role</label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    className="form-input"
+                    style={{ appearance: 'none', paddingRight: 36, cursor: 'pointer' }}
+                  >
+                    <option value="receptionist">Receptionist</option>
+                    <option value="manager">Manager / Owner</option>
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none' }}
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Demo badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--warn)' }}>
-              <div className="live-dot" />
-              Demo mode — no password required
-            </div>
+              {/* Demo user preview */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: 12, padding: '10px 14px',
+              }}>
+                <div className="avatar sm">
+                  {role === 'receptionist' ? 'MA' : 'SM'}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                    {role === 'receptionist' ? 'Mariam Al-Zaabi' : 'Saeed Al-Mansoori'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+                    {role === 'receptionist' ? 'Receptionist — Full job access' : 'Manager — Dashboard & reports'}
+                  </div>
+                </div>
+              </div>
 
-            {/* Submit */}
-            <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: '12px 20px', marginTop: 4 }}>
-              {loading ? (
-                <>
-                  <span style={{
-                    width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)',
-                    borderTopColor: 'white', borderRadius: '50%',
-                    display: 'inline-block', animation: 'spin 0.7s linear infinite',
-                  }} />
-                  Signing in...
-                </>
-              ) : 'Enter Dashboard'}
-            </button>
-          </form>
+              {/* Demo badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--warn)' }}>
+                <div className="live-dot" />
+                Demo mode — no password required
+              </div>
+
+              {/* Submit */}
+              <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: '12px 20px', marginTop: 4 }}>
+                {loading ? (
+                  <>
+                    <span style={{
+                      width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: 'white', borderRadius: '50%',
+                      display: 'inline-block', animation: 'spin 0.7s linear infinite',
+                    }} />
+                    Signing in...
+                  </>
+                ) : 'Enter Dashboard'}
+              </button>
+            </form>
+          </div>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', marginTop: 20 }}>

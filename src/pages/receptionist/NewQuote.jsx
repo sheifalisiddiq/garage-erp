@@ -315,7 +315,7 @@ export default function NewQuote() {
                 <div key={item.tempId} className="flex items-center gap-3 bg-surface-600 rounded-xl px-4 py-3">
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0 ${
                     item.item_type === 'service'
-                      ? 'text-blue-400 bg-blue-400/10'
+                      ? 'text-rose-400 bg-rose-400/10'
                       : 'text-amber-400 bg-amber-400/10'
                   }`}>
                     {item.item_type === 'service' ? 'SVC' : 'PRT'}

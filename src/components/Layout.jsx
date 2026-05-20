@@ -198,7 +198,7 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    document.documentElement.setAttribute('data-accent', 'indigo')
+    document.documentElement.setAttribute('data-accent', 'crimson')
     document.documentElement.setAttribute('data-density', 'comfortable')
     localStorage.setItem('pitstop-theme', theme)
   }, [theme])
