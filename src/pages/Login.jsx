@@ -48,7 +48,7 @@ function RoleDropdown({ value, onChange }) {
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '11px 14px',
           background: '#f9f8f6',
-          border: `1px solid ${open ? '#f59e0b' : 'rgba(30,25,15,0.16)'}`,
+          border: `1px solid ${open ? '#e11d48' : 'rgba(30,25,15,0.16)'}`,
           borderRadius: 10,
           cursor: 'pointer', textAlign: 'left',
           boxShadow: open ? '0 0 0 3px rgba(245,158,11,0.12)' : '0 1px 2px rgba(0,0,0,0.04)',
@@ -88,9 +88,9 @@ function RoleDropdown({ value, onChange }) {
                 width: '100%', textAlign: 'left',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 gap: 10, padding: '10px 14px',
-                background: r.value === value ? '#fffbeb' : 'transparent',
+                background: r.value === value ? '#fff1f2' : 'transparent',
                 border: 0, cursor: 'pointer',
-                color: r.value === value ? '#b45309' : '#1a1714',
+                color: r.value === value ? '#9f1239' : '#1a1714',
                 fontSize: 13.5, fontFamily: 'inherit',
                 fontWeight: r.value === value ? 600 : 400,
                 transition: 'background 120ms ease',
@@ -99,7 +99,7 @@ function RoleDropdown({ value, onChange }) {
               onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
             >
               {r.label}
-              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: '#d97706' }} />}
+              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: '#be123c' }} />}
             </button>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function Login() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 32 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 9,
-            background: '#f59e0b',
+            background: '#e11d48',
             display: 'grid', placeItems: 'center',
           }}>
             <Wrench size={16} color="white" strokeWidth={2.2} />
@@ -193,7 +193,7 @@ export default function Login() {
             }}>
               <div style={{
                 width: 34, height: 34, borderRadius: 999, flexShrink: 0,
-                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                background: 'linear-gradient(135deg, #e11d48, #be123c)',
                 display: 'grid', placeItems: 'center',
                 color: 'white', fontWeight: 700, fontSize: 12,
               }}>
@@ -221,7 +221,7 @@ export default function Login() {
                 }} />
                 Demo mode active
               </span>
-              <span style={{ color: '#d97706' }}>No password required</span>
+              <span style={{ color: '#be123c' }}>No password required</span>
             </div>
 
             {/* Submit */}
@@ -231,7 +231,7 @@ export default function Login() {
               style={{
                 width: '100%', padding: '12px 20px', marginTop: 4,
                 border: 0, borderRadius: 10,
-                background: loading ? '#fcd34d' : '#f59e0b',
+                background: loading ? '#fda4af' : '#e11d48',
                 color: 'white', fontSize: 14, fontWeight: 700,
                 fontFamily: 'inherit',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -239,8 +239,8 @@ export default function Login() {
                 transition: 'background 140ms ease, transform 140ms ease, box-shadow 140ms ease',
                 letterSpacing: '-0.01em',
               }}
-              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = '#d97706'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px -6px rgba(245,158,11,0.5)'; } }}
-              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = '#f59e0b'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; } }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = '#be123c'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px -6px rgba(225,29,72,0.5)'; } }}
+              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = '#e11d48'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; } }}
             >
               {loading ? (
                 <>

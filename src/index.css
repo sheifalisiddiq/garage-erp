@@ -8,15 +8,15 @@
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Default accent — amber copper */
-  --accent-50:  #fffbeb;
-  --accent-100: #fef3c7;
-  --accent-300: #fcd34d;
-  --accent-400: #fbbf24;
-  --accent-500: #f59e0b;
-  --accent-600: #d97706;
-  --accent-700: #b45309;
-  --accent-glow: 245 158 11;
+  /* Default accent — crimson */
+  --accent-50:  #fff1f2;
+  --accent-100: #ffe4e6;
+  --accent-300: #fda4af;
+  --accent-400: #fb7185;
+  --accent-500: #e11d48;
+  --accent-600: #be123c;
+  --accent-700: #9f1239;
+  --accent-glow: 225 29 72;
 }
 
 /* ---------- LIGHT (default) ---------- */
@@ -222,7 +222,7 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 600;
 }
 :root[data-theme="dark"] .nav-item.is-active {
-  background: rgba(245,158,11,0.12);
+  background: rgba(var(--accent-glow)/0.12);
   color: var(--accent-400);
 }
 .nav-item .nav-icon { width: 17px; height: 17px; flex: 0 0 17px; opacity: 0.8; }
@@ -234,7 +234,7 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 99px; padding: 2px 7px;
 }
 :root[data-theme="dark"] .nav-badge {
-  background: rgba(245,158,11,0.15); color: var(--accent-400);
+  background: rgba(var(--accent-glow)/0.15); color: var(--accent-400);
 }
 
 .side-foot {
