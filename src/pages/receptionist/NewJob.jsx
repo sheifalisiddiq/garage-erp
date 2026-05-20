@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { ArrowLeft, User, Phone, Mail, Car, Wrench, FileText, Loader2 } from 'lucide-react'
+import { ArrowLeft, User, Phone, Mail, Car, Wrench, FileText, Loader2, ChevronDown } from 'lucide-react'
 
 const MAKES = ['Toyota', 'Nissan', 'Honda', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Ford', 'Chevrolet', 'Mitsubishi', 'Lexus', 'Infiniti', 'Land Rover', 'Jeep', 'Audi', 'Volkswagen', 'Other']
 
@@ -183,10 +183,13 @@ export default function NewJob() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Make *" error={errors.vehicleMake}>
-              <select className={inputCls + ' appearance-none cursor-pointer'} value={form.vehicleMake} onChange={set('vehicleMake')}>
-                <option value="">Select make...</option>
-                {MAKES.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+              <div className="relative">
+                <select className={inputCls + ' appearance-none cursor-pointer pr-9'} value={form.vehicleMake} onChange={set('vehicleMake')}>
+                  <option value="">Select make...</option>
+                  {MAKES.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              </div>
             </FormField>
             <FormField label="Model *" error={errors.vehicleModel}>
               <input className={inputCls} placeholder="Camry, Patrol, Civic..." value={form.vehicleModel} onChange={set('vehicleModel')} />
@@ -207,12 +210,15 @@ export default function NewJob() {
           </h2>
           <div className="space-y-4">
             <FormField label="Assign Mechanic *" icon={Wrench} error={errors.mechanicId}>
-              <select className={inputCls + ' appearance-none cursor-pointer'} value={form.mechanicId} onChange={set('mechanicId')}>
-                <option value="">Select mechanic...</option>
-                {mechanics.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select className={inputCls + ' appearance-none cursor-pointer pr-9'} value={form.mechanicId} onChange={set('mechanicId')}>
+                  <option value="">Select mechanic...</option>
+                  {mechanics.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              </div>
             </FormField>
             <FormField label="Issue Description *" icon={FileText} error={errors.description}>
               <textarea

@@ -388,6 +388,7 @@ function AdjustModal({ part, onClose, onSave, user, isDemo }) {
 
 export default function Inventory() {
   const { user } = useAuth()
+  const readOnly = user?.role === 'manager' || user?.role === 'admin'
   const [parts, setParts]             = useState([])
   const [movements, setMovements]     = useState([])
   const [loading, setLoading]         = useState(true)
@@ -496,15 +497,19 @@ export default function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight">Inventory</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Parts stock levels and movement history</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {readOnly ? 'Parts stock levels — read-only view' : 'Parts stock levels and movement history'}
+          </p>
         </div>
-        <button
-          onClick={() => setAddingPart(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Add Part
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setAddingPart(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Part
+          </button>
+        )}
       </div>
 
       {/* Demo banner */}
@@ -619,12 +624,14 @@ export default function Inventory() {
                     {!isOut && <p className="text-[10px] text-slate-600 capitalize">{part.unit}s</p>}
                   </div>
 
-                  <button
-                    onClick={() => setAdjPart(part)}
-                    className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-surface-600 border border-white/[0.06] text-slate-400 hover:text-white hover:border-brand-500/30 hover:bg-brand-500/10 text-xs font-medium transition"
-                  >
-                    Adjust
-                  </button>
+                  {!readOnly && (
+                    <button
+                      onClick={() => setAdjPart(part)}
+                      className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-surface-600 border border-white/[0.06] text-slate-400 hover:text-white hover:border-brand-500/30 hover:bg-brand-500/10 text-xs font-medium transition"
+                    >
+                      Adjust
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -673,7 +680,7 @@ export default function Inventory() {
         )}
       </div>
 
-      {addingPart && (
+      {!readOnly && addingPart && (
         <AddPartModal
           isDemo={isDemo}
           onClose={() => setAddingPart(false)}
@@ -681,7 +688,7 @@ export default function Inventory() {
         />
       )}
 
-      {adjustingPart && (
+      {!readOnly && adjustingPart && (
         <AdjustModal
           part={adjustingPart}
           user={user}

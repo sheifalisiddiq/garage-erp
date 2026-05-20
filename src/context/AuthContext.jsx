@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState } from 'react'
 
 const AuthContext = createContext(null)
 
@@ -14,6 +14,12 @@ const DEMO_USERS = {
     name: 'Saeed Al-Mansoori',
     role: 'manager',
     phone: '+971502223344',
+  },
+  admin: {
+    id: 'demo-admin',
+    name: 'Ahmad Al-Rashid',
+    role: 'admin',
+    phone: '+971503334455',
   },
 }
 

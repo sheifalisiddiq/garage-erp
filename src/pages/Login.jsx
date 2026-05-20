@@ -14,7 +14,7 @@ export default function Login() {
     setLoading(true)
     await new Promise(r => setTimeout(r, 600))
     const user = login(role)
-    navigate(user.role === 'manager' ? '/manager' : '/receptionist')
+    navigate(user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/receptionist')
   }
 
   return (
@@ -91,6 +91,7 @@ export default function Login() {
                   >
                     <option value="receptionist">Receptionist</option>
                     <option value="manager">Manager / Owner</option>
+                    <option value="admin">Admin (Multi-garage)</option>
                   </select>
                   <ChevronDown
                     size={14}
@@ -106,14 +107,14 @@ export default function Login() {
                 borderRadius: 12, padding: '10px 14px',
               }}>
                 <div className="avatar sm">
-                  {role === 'receptionist' ? 'MA' : 'SM'}
+                  {role === 'receptionist' ? 'MA' : role === 'manager' ? 'SM' : 'AR'}
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                    {role === 'receptionist' ? 'Mariam Al-Zaabi' : 'Saeed Al-Mansoori'}
+                    {role === 'receptionist' ? 'Mariam Al-Zaabi' : role === 'manager' ? 'Saeed Al-Mansoori' : 'Ahmad Al-Rashid'}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
-                    {role === 'receptionist' ? 'Receptionist — Full job access' : 'Manager — Dashboard & reports'}
+                    {role === 'receptionist' ? 'Receptionist — Jobs, inventory & settings' : role === 'manager' ? 'Manager — Read-only analytics' : 'Admin — Multi-garage management'}
                   </div>
                 </div>
               </div>

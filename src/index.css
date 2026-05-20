@@ -702,3 +702,20 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer; transition: all 160ms ease;
 }
 .btn-secondary:hover { background: var(--pill-bg-hover); color: var(--text); }
+
+/* ── Select / dropdown ────────────────────────────────────── */
+select {
+  color-scheme: dark;
+}
+:root[data-theme="light"] select {
+  color-scheme: light;
+}
+option {
+  background-color: var(--card-elev);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+option:checked {
+  background-color: rgba(var(--accent-glow) / 0.18);
+  color: var(--text);
+}

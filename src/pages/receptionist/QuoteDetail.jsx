@@ -34,10 +34,15 @@ export default function QuoteDetail() {
   const { user } = useAuth()
   const isReceptionist = user?.role === 'receptionist'
 
-  const [quote, setQuote]       = useState(null)
+  const [quote, setQuote]         = useState(null)
   const [lineItems, setLineItems] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [updating, setUpdating] = useState(false)
+  const [loading, setLoading]     = useState(true)
+  const [updating, setUpdating]   = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  const tpl = (() => {
+    try { return JSON.parse(localStorage.getItem('pitstop_template') || 'null') } catch { return null }
+  })() || { companyName: 'Pitstop Garage', companyPhone: '+971 4 123 4567', companyEmail: 'info@pitstop.ae', defaultValidity: 14, footerText: 'Prices are inclusive of 5% VAT. This quote is valid for the stated validity period.' }
 
   const fetchQuote = useCallback(async () => {
     const [{ data: q }, { data: items }] = await Promise.all([
@@ -69,11 +74,61 @@ export default function QuoteDetail() {
     navigate('/receptionist/new-job')
   }
 
-  const handlePDF = () => {
-    const prevTitle = document.title
-    document.title = `${quote.quote_number} — Garage ERP`
-    window.print()
-    document.title = prevTitle
+  const handlePDF = async () => {
+    const printEl = document.getElementById('pdf-print-area')
+    if (!printEl) return
+    setDownloading(true)
+
+    // Reveal off-screen so html2canvas can render it
+    const prev = {
+      position: printEl.style.position,
+      top:      printEl.style.top,
+      left:     printEl.style.left,
+      display:  printEl.style.display,
+      width:    printEl.style.width,
+    }
+    printEl.style.position = 'fixed'
+    printEl.style.top      = '0'
+    printEl.style.left     = '-9999px'
+    printEl.style.display  = 'block'
+    printEl.style.width    = '794px' // ~A4 at 96dpi
+
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      const canvas = await html2canvas(printEl, {
+        scale:           2,
+        useCORS:         true,
+        logging:         false,
+        backgroundColor: '#ffffff',
+      })
+
+      const pdf      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pageW    = pdf.internal.pageSize.getWidth()
+      const pageH    = pdf.internal.pageSize.getHeight()
+      const imgH     = (canvas.height * pageW) / canvas.width
+      const imgData  = canvas.toDataURL('image/png')
+
+      let remaining = imgH
+      let offset    = 0
+      pdf.addImage(imgData, 'PNG', 0, offset, pageW, imgH)
+      remaining -= pageH
+
+      while (remaining > 0) {
+        offset -= pageH
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, offset, pageW, imgH)
+        remaining -= pageH
+      }
+
+      pdf.save(`${quote.quote_number}.pdf`)
+    } finally {
+      Object.assign(printEl.style, prev)
+      setDownloading(false)
+    }
   }
 
   const basePath = isReceptionist ? '/receptionist/quotes' : '/manager/quotes'
@@ -126,11 +181,15 @@ export default function QuoteDetail() {
             </button>
             <button
               onClick={handlePDF}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition"
-              title="Download PDF — choose 'Save as PDF' in the print dialog"
+              disabled={downloading}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition disabled:opacity-60"
+              title="Download PDF"
             >
-              <FileDown className="w-4 h-4" />
-              <span className="hidden sm:inline">Download PDF</span>
+              {downloading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <FileDown className="w-4 h-4" />
+              }
+              <span className="hidden sm:inline">{downloading ? 'Generating…' : 'Download PDF'}</span>
             </button>
           </div>
         </div>
@@ -283,13 +342,13 @@ export default function QuoteDetail() {
       </div>
 
       {/* ── Print / PDF layout ── */}
-      <div className="hidden print:block p-10 bg-white text-black font-sans">
+      <div id="pdf-print-area" className="hidden print:block p-10 bg-white text-black font-sans">
         {/* Header */}
         <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-gray-200">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Garage ERP</h1>
+            <h1 className="text-2xl font-black text-gray-900">{tpl.companyName}</h1>
             <p className="text-gray-500 text-sm mt-0.5">Dubai Auto Services</p>
-            <p className="text-gray-500 text-sm">info@garageerp.ae · +971 4 123 4567</p>
+            <p className="text-gray-500 text-sm">{tpl.companyEmail} · {tpl.companyPhone}</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-black text-gray-900">{quote.quote_number}</div>
@@ -400,7 +459,7 @@ export default function QuoteDetail() {
         )}
 
         <div className="pt-6 border-t border-gray-200 text-xs text-gray-400 text-center">
-          This quote is valid for {quote.valid_days} days from the date of issue · Prices are inclusive of 5% VAT · {quote.quote_number}
+          {tpl.footerText} · {quote.quote_number}
         </div>
       </div>
     </>

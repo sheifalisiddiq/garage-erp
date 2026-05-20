@@ -3,10 +3,10 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
-  LogOut, Activity, Package, ClipboardList,
-  Bell, Search, Settings, Sun, Moon, ChevronDown,
-  Mic, MessageCircle, HelpCircle, Menu, X, Users,
-  CalendarDays, Boxes, BarChart3
+  LogOut, Activity, ClipboardList,
+  Bell, Search, Settings, Sun, Moon,
+  Mic, MessageCircle, HelpCircle, Menu, X,
+  Boxes, ShieldCheck
 } from 'lucide-react'
 
 /* ── Nav configuration ───────────────────────────────── */
@@ -22,10 +22,12 @@ const MANAGER_NAV_SUPPORT = [
 ]
 
 const RECEPTIONIST_NAV_MAIN = [
-  { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard, to: '/receptionist', end: true },
-  { id: 'new-job',   label: 'New Job',    icon: PlusCircle,      to: '/receptionist/new-job' },
-  { id: 'quotes',    label: 'Quotations', icon: ClipboardList,   to: '/receptionist/quotes' },
-  { id: 'invoices',  label: 'Invoices',   icon: FileText,        to: '/receptionist/invoices' },
+  { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard, to: '/receptionist',           end: true },
+  { id: 'new-job',   label: 'New Job',    icon: PlusCircle,      to: '/receptionist/new-job'          },
+  { id: 'inventory', label: 'Inventory',  icon: Boxes,           to: '/receptionist/inventory'        },
+  { id: 'quotes',    label: 'Quotations', icon: ClipboardList,   to: '/receptionist/quotes'           },
+  { id: 'invoices',  label: 'Invoices',   icon: FileText,        to: '/receptionist/invoices'         },
+  { id: 'settings',  label: 'Settings',   icon: Settings,        to: '/receptionist/settings'         },
 ]
 const RECEPTIONIST_NAV_SUPPORT = [
   { id: 'messages', label: 'Messages',      icon: MessageCircle },
@@ -83,7 +85,7 @@ function SidebarContent({ user, onNavClick, onLogout }) {
         <div className="welcome-hi">Welcome, <strong>{firstName}</strong></div>
         <div className="welcome-sub">
           {dayName} at the garage —<br />
-          {isReceptionist ? 'Front desk' : 'Manager view'} · {dateFmt}
+          {isReceptionist ? 'Front desk' : user?.role === 'admin' ? 'Admin view' : 'Manager view'} · {dateFmt}
         </div>
       </div>
 
@@ -108,7 +110,12 @@ function SidebarContent({ user, onNavClick, onLogout }) {
         <div className="avatar sm">{initials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="profile-name" style={{ fontSize: 12 }}>{user?.name}</div>
-          <div className="profile-role" style={{ textTransform: 'capitalize' }}>{user?.role}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div className="profile-role" style={{ textTransform: 'capitalize' }}>{user?.role}</div>
+            {user?.role === 'admin' && (
+              <ShieldCheck size={10} style={{ color: 'var(--accent-500)', flexShrink: 0 }} />
+            )}
+          </div>
         </div>
         <button
           onClick={onLogout}
