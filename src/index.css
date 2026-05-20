@@ -61,39 +61,39 @@
 
 /* ---------- LIGHT ---------- */
 :root[data-theme="light"] {
-  --bg:             #eef0f4;
-  --bg-sidebar:     #eef0f4;
-  --bg-shell:       #f5f6f9;
+  --bg:             #edf0f5;
+  --bg-sidebar:     #e8ecf2;
+  --bg-shell:       #f4f6f9;
   --card:           #ffffff;
-  --card-elev:      #ffffff;
-  --card-soft:      #f6f7fa;
-  --border:         rgba(15,18,28,0.08);
-  --border-strong:  rgba(15,18,28,0.14);
-  --text:           #0c1020;
-  --text-muted:     #5d647a;
-  --text-dim:       #8f95a8;
-  --text-faint:     #b4bac9;
-  --pill-bg:        rgba(15,18,28,0.04);
-  --pill-bg-hover:  rgba(15,18,28,0.07);
+  --card-elev:      #f7f8fc;
+  --card-soft:      #f0f2f7;
+  --border:         rgba(15,18,28,0.10);
+  --border-strong:  rgba(15,18,28,0.18);
+  --text:           #0d1120;
+  --text-muted:     #475569;
+  --text-dim:       #64748b;
+  --text-faint:     #94a3b8;
+  --pill-bg:        rgba(15,18,28,0.05);
+  --pill-bg-hover:  rgba(15,18,28,0.09);
   --hero-grad: radial-gradient(120% 140% at 18% 22%, #f3f1ff 0%, #ffffff 50%, #f5f4fb 100%);
   --hero-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   --shine: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0));
   --ok:          #059669;
   --warn:        #b45309;
   --danger:      #dc2626;
-  --info:        #2563eb;
+  --info:        #1d4ed8;
   --ok-soft:     rgba(5,150,105,0.10);
   --warn-soft:   rgba(180,83,9,0.10);
   --danger-soft: rgba(220,38,38,0.10);
-  --info-soft:   rgba(37,99,235,0.10);
+  --info-soft:   rgba(29,78,216,0.10);
   --chart-grid:  rgba(15,18,28,0.07);
-  --chart-axis:  #8f95a8;
-  --frame-shadow: 0 30px 80px -40px rgba(40,50,80,0.25), 0 0 0 1px rgba(15,18,28,0.05) inset;
+  --chart-axis:  #64748b;
+  --frame-shadow: 0 24px 64px -24px rgba(30,40,70,0.18), 0 0 0 1px rgba(15,18,28,0.07) inset;
   /* legacy compat */
-  --color-bg:      #eef0f4;
-  --color-surface: #f5f6f9;
+  --color-bg:      #edf0f5;
+  --color-surface: #f4f6f9;
   --color-card:    #ffffff;
-  --color-border:  rgba(15,18,28,0.08);
+  --color-border:  rgba(15,18,28,0.10);
   --color-brand:   #6366f1;
   --radius-card:   14px;
 }
@@ -139,9 +139,9 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .shell {
-  margin: 14px 14px 14px 0;
+  margin: 12px 12px 12px 0;
   background: var(--bg-shell);
-  border-radius: 28px;
+  border-radius: 24px;
   border: 1px solid var(--border);
   box-shadow: var(--frame-shadow);
   overflow: hidden;
@@ -223,9 +223,10 @@ button { font-family: inherit; cursor: pointer; }
 /* ── Top bar ─────────────────────────────────────────── */
 .topbar {
   display: flex; align-items: center; gap: 16px;
-  padding: 18px 26px;
+  padding: 14px 22px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  background: var(--bg-shell);
 }
 .pill-group {
   display: inline-flex; gap: 6px; padding: 5px; border-radius: 999px;
@@ -581,6 +582,10 @@ button { font-family: inherit; cursor: pointer; }
   .top-grid    { grid-template-columns: 1fr; }
   .bottom-grid { grid-template-columns: 1fr; }
 }
+/* Dashboard stat cards: 4-col → 2-col on narrow screens */
+@media (max-width: 640px) {
+  .stats-grid-responsive { grid-template-columns: repeat(2, 1fr) !important; }
+}
 
 /* ── Selection & scrollbar ───────────────────────────── */
 ::selection { background: rgba(225, 29, 72, 0.25); color: #ffe4e6; }
@@ -643,26 +648,63 @@ button { font-family: inherit; cursor: pointer; }
 .focus\:ring-brand-500:focus { --tw-ring-color: rgb(var(--accent-glow) / 0.55) !important; }
 
 /* ── Light-mode overrides for hardcoded Tailwind classes ── */
+
+/* Text: white → semantic dark (except on colored button surfaces) */
 [data-theme="light"] .text-white                          { color: var(--text) !important; }
+/* Exempt: buttons/anchors with a colored fill background keep white text */
+[data-theme="light"] button[class*="bg-brand-6"],
+[data-theme="light"] button[class*="bg-brand-7"],
+[data-theme="light"] button[class*="bg-emerald-6"],
+[data-theme="light"] button[class*="bg-emerald-7"],
+[data-theme="light"] button[class*="bg-red-"],
+[data-theme="light"] button[class*="bg-rose-"],
+[data-theme="light"] button[class*="bg-brand-6"] *,
+[data-theme="light"] button[class*="bg-brand-7"] *,
+[data-theme="light"] button[class*="bg-emerald-6"] *,
+[data-theme="light"] button[class*="bg-emerald-7"] *,
+[data-theme="light"] button[class*="bg-red-"] *,
+[data-theme="light"] button[class*="bg-rose-"] *,
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .btn-primary *                       { color: white !important; }
+
+/* Slate text: improve contrast for light backgrounds */
 [data-theme="light"] .text-slate-100,
 [data-theme="light"] .text-slate-200,
 [data-theme="light"] .text-slate-300                      { color: var(--text-muted) !important; }
-[data-theme="light"] .text-slate-400,
-[data-theme="light"] .text-slate-500,
-[data-theme="light"] .text-slate-600                      { color: var(--text-dim) !important; }
+[data-theme="light"] .text-slate-400                      { color: var(--text-dim) !important; }
+[data-theme="light"] .text-slate-500                      { color: #475569 !important; }
+[data-theme="light"] .text-slate-600                      { color: #334155 !important; }
+
+/* Borders: make white-opacity borders visible */
 [data-theme="light"] [class*="border-white"]              { border-color: var(--border) !important; }
 [data-theme="light"] [class*="divide-white"]              { border-color: var(--border) !important; }
-[data-theme="light"] .glass                               { background: rgba(255,255,255,0.82); }
+
+/* Surfaces: differentiate elevation levels */
+[data-theme="light"] .bg-surface-700                      { background: var(--card) !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(15,18,28,0.06) !important; }
+[data-theme="light"] .bg-surface-600                      { background: var(--card-elev) !important; }
+
+/* Input backgrounds */
+[data-theme="light"] .bg-surface-600.border,
+[data-theme="light"] input.bg-surface-600,
+[data-theme="light"] select.bg-surface-600,
+[data-theme="light"] textarea.bg-surface-600             { background: #f0f2f7 !important; color: var(--text) !important; }
+
+/* Placeholder text */
+[data-theme="light"] .placeholder-slate-500::placeholder { color: #94a3b8 !important; }
+
+/* Status pill text colors already use semantic vars — no override needed */
+
+[data-theme="light"] .glass                               { background: rgba(255,255,255,0.88); }
 [data-theme="light"] ::-webkit-scrollbar-thumb            { background: rgba(0,0,0,0.12); }
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover      { background: rgba(0,0,0,0.2); }
-[data-theme="light"] ::selection                          { background: rgba(225,29,72,0.2); color: #4c0519; }
+[data-theme="light"] ::selection                          { background: rgba(225,29,72,0.18); color: #4c0519; }
 
 /* ── Form input base (used across all pages) ──────────── */
 .form-input {
   width: 100%;
   padding: 9px 14px;
   background: var(--pill-bg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   color: var(--text);
   font-size: 13.5px;
@@ -674,6 +716,14 @@ button { font-family: inherit; cursor: pointer; }
 .form-input:focus {
   border-color: var(--accent-500);
   box-shadow: 0 0 0 3px rgba(var(--accent-glow)/0.15);
+}
+:root[data-theme="light"] .form-input {
+  background: #f0f2f7;
+  border-color: rgba(15,18,28,0.14);
+}
+:root[data-theme="light"] .form-input:focus {
+  background: #ffffff;
+  border-color: var(--accent-500);
 }
 .form-label {
   display: block;

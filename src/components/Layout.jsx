@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useSearch } from '../context/SearchContext'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
   LogOut, Activity, ClipboardList,
   Bell, Settings, Sun, Moon,
-  Mic, Menu, X,
+  Search, Menu, X,
   Boxes, ShieldCheck
 } from 'lucide-react'
 
@@ -119,6 +120,7 @@ function SidebarContent({ user, onNavClick, onLogout }) {
 
 /* ── Top bar ─────────────────────────────────────────── */
 function TopBar({ theme, toggleTheme, onMenuOpen }) {
+  const { search, setSearch } = useSearch()
   return (
     <header className="topbar">
       {/* Mobile hamburger */}
@@ -134,8 +136,13 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
 
       {/* Search */}
       <div className="searchbar">
-        <Mic size={16} />
-        <input placeholder="Search jobs, vehicles, customers…" />
+        <Search size={16} />
+        <input
+          placeholder="Search jobs, customers, plates…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          aria-label="Search"
+        />
         <kbd>⌘K</kbd>
       </div>
 
@@ -144,11 +151,12 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
         <button
           className="icon-btn"
           onClick={toggleTheme}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
-        <button className="icon-btn" title="Notifications">
+        <button className="icon-btn" title="Notifications" aria-label="Notifications">
           <Bell size={16} />
           <span className="dot" />
         </button>
