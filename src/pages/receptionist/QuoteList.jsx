@@ -66,7 +66,7 @@ export default function QuoteList() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5 animate-fade-up">
+    <div className="flex flex-col gap-5 animate-fade-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

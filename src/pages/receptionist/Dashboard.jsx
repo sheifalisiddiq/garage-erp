@@ -178,7 +178,7 @@ export default function ReceptionistDashboard() {
   })
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-3">
         <div>

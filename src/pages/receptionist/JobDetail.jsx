@@ -309,7 +309,7 @@ export default function JobDetail() {
       </div>
     )
   }
-  if (!job) return <div className="p-6 text-slate-400">Job not found.</div>
+  if (!job) return <div style={{ color: 'var(--text-muted)', padding: '40px 0', textAlign: 'center' }}>Job not found.</div>
 
   const isOpen = job.status === 'open'
   const isPaid = invoice?.status === 'paid'
@@ -317,7 +317,7 @@ export default function JobDetail() {
   const selectCls = "w-full bg-surface-600 border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none cursor-pointer"
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
