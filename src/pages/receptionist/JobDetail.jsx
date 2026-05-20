@@ -218,6 +218,53 @@ export default function JobDetail() {
   const partsTotal = jobParts.reduce((s, l) => s + Number(l.part_cost) * l.quantity, 0)
   const grandTotal = serviceTotal + partsTotal
 
+  const updateServiceCostLocal = (lineId, val) => {
+    setJobServices(prev => prev.map(l => l.id === lineId ? { ...l, service_cost: val } : l))
+  }
+  const saveServiceCost = async (lineId, val) => {
+    const num = parseFloat(val) || 0
+    setJobServices(prev => prev.map(l => l.id === lineId ? { ...l, service_cost: num } : l))
+    await supabase.from('job_services').update({ service_cost: num }).eq('id', lineId)
+  }
+  const updatePartCostLocal = (lineId, val) => {
+    setJobParts(prev => prev.map(l => l.id === lineId ? { ...l, part_cost: val } : l))
+  }
+  const savePartCost = async (lineId, val) => {
+    const num = parseFloat(val) || 0
+    setJobParts(prev => prev.map(l => l.id === lineId ? { ...l, part_cost: num } : l))
+    await supabase.from('job_parts').update({ part_cost: num }).eq('id', lineId)
+  }
+
+  const generateInvoiceOnly = async () => {
+    if (jobServices.length === 0 && jobParts.length === 0) {
+      alert('Add at least one service or part before generating an invoice.')
+      return
+    }
+    setCompleting(true)
+    try {
+      const { data: invNumData } = await supabase.rpc('next_invoice_number')
+      const { data: inv, error: invErr } = await supabase.from('invoices').insert({
+        invoice_number: invNumData,
+        job_id: id,
+        customer_phone: job.customers?.phone,
+        customer_email: job.customers?.email,
+        service_total: serviceTotal,
+        parts_total: partsTotal,
+        total_amount: grandTotal,
+        status: 'sent',
+        sent_via: job.customers?.email ? 'sms,email' : 'sms',
+      }).select().single()
+      if (invErr) throw invErr
+      setInvoice(inv)
+      await fetchJob()
+      setShowModal(true)
+    } catch (err) {
+      alert('Error generating invoice: ' + err.message)
+    } finally {
+      setCompleting(false)
+    }
+  }
+
   const completeAndInvoice = async () => {
     if (jobServices.length === 0 && jobParts.length === 0) {
       alert('Please add at least one service or part before completing.')
@@ -487,17 +534,57 @@ export default function JobDetail() {
 
         {/* Invoice preview */}
         <Section title="Invoice Preview" icon={Receipt}>
+          {/* Editable hint — only shown when no invoice generated yet */}
+          {!invoice && (jobServices.length + jobParts.length) > 0 && (
+            <p className="text-xs text-slate-500 mb-3">
+              Adjust item costs below if needed — total updates automatically.
+            </p>
+          )}
+
           <div className="space-y-2 text-sm mb-4">
             {jobServices.map(l => (
-              <div key={l.id} className="flex justify-between text-slate-300">
-                <span>{l.service_name}</span>
-                <span>{formatAED(l.service_cost)}</span>
+              <div key={l.id} className="flex items-center justify-between gap-3 text-slate-300">
+                <span className="flex-1 truncate">{l.service_name}</span>
+                {!invoice ? (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-slate-500 text-xs">AED</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={l.service_cost}
+                      onChange={e => updateServiceCostLocal(l.id, e.target.value)}
+                      onBlur={e => saveServiceCost(l.id, e.target.value)}
+                      className="w-24 text-right bg-surface-600 border border-white/[0.08] text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                ) : (
+                  <span className="flex-shrink-0">{formatAED(l.service_cost)}</span>
+                )}
               </div>
             ))}
             {jobParts.map(l => (
-              <div key={l.id} className="flex justify-between text-slate-300">
-                <span>{l.part_name} ×{l.quantity}</span>
-                <span>{formatAED(Number(l.part_cost) * l.quantity)}</span>
+              <div key={l.id} className="flex items-center justify-between gap-3 text-slate-300">
+                <span className="flex-1 truncate">{l.part_name} <span className="text-slate-500">×{l.quantity}</span></span>
+                {!invoice ? (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-slate-500 text-xs">AED/unit</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={l.part_cost}
+                      onChange={e => updatePartCostLocal(l.id, e.target.value)}
+                      onBlur={e => savePartCost(l.id, e.target.value)}
+                      className="w-24 text-right bg-surface-600 border border-white/[0.08] text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <span className="text-slate-500 text-xs min-w-[60px] text-right">
+                      = {formatAED(Number(l.part_cost) * l.quantity)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="flex-shrink-0">{formatAED(Number(l.part_cost) * l.quantity)}</span>
+                )}
               </div>
             ))}
 
@@ -524,20 +611,34 @@ export default function JobDetail() {
           </div>
 
           {/* Action buttons */}
-          {isOpen && (
-            <button
-              onClick={completeAndInvoice}
-              disabled={completing || (jobServices.length === 0 && jobParts.length === 0)}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50"
-            >
-              {completing
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating Invoice...</>
-                : <><CheckCircle2 className="w-4 h-4" /> Complete & Generate Invoice</>
-              }
-            </button>
+          {!invoice && (jobServices.length + jobParts.length) > 0 && (
+            <div className="space-y-2">
+              {isOpen && (
+                <button
+                  onClick={completeAndInvoice}
+                  disabled={completing}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                >
+                  {completing
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                    : <><CheckCircle2 className="w-4 h-4" /> Complete Job & Generate Invoice</>
+                  }
+                </button>
+              )}
+              <button
+                onClick={generateInvoiceOnly}
+                disabled={completing}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface-600 border border-white/[0.08] hover:border-brand-500/40 text-slate-300 hover:text-white text-sm font-medium rounded-xl transition disabled:opacity-50"
+              >
+                {completing
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                  : <><Receipt className="w-4 h-4" /> Generate Invoice Only</>
+                }
+              </button>
+            </div>
           )}
 
-          {!isOpen && invoice && invoice.status === 'sent' && (
+          {invoice && invoice.status === 'sent' && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-xl px-4 py-2.5">
                 <Receipt className="w-4 h-4" />

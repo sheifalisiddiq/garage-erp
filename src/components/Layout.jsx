@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
   LogOut, Activity, ClipboardList,
-  Bell, Search, Settings, Sun, Moon,
-  Mic, MessageCircle, HelpCircle, Menu, X,
+  Bell, Settings, Sun, Moon,
+  Mic, Menu, X,
   Boxes, ShieldCheck
 } from 'lucide-react'
 
@@ -16,10 +16,6 @@ const MANAGER_NAV_MAIN = [
   { id: 'inventory', label: 'Inventory', icon: Boxes,           to: '/manager/inventory' },
   { id: 'quotes',    label: 'Quotations',icon: ClipboardList,   to: '/manager/quotes' },
 ]
-const MANAGER_NAV_SUPPORT = [
-  { id: 'messages', label: 'Messages',     icon: MessageCircle },
-  { id: 'help',     label: 'Help & Support', icon: HelpCircle },
-]
 
 const RECEPTIONIST_NAV_MAIN = [
   { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard, to: '/receptionist',           end: true },
@@ -28,10 +24,6 @@ const RECEPTIONIST_NAV_MAIN = [
   { id: 'quotes',    label: 'Quotations', icon: ClipboardList,   to: '/receptionist/quotes'           },
   { id: 'invoices',  label: 'Invoices',   icon: FileText,        to: '/receptionist/invoices'         },
   { id: 'settings',  label: 'Settings',   icon: Settings,        to: '/receptionist/settings'         },
-]
-const RECEPTIONIST_NAV_SUPPORT = [
-  { id: 'messages', label: 'Messages',      icon: MessageCircle },
-  { id: 'help',     label: 'Help & Support', icon: HelpCircle },
 ]
 
 /* ── Sidebar nav item ─────────────────────────────────── */
@@ -63,9 +55,8 @@ function NavItem({ item, onClick }) {
 /* ── Sidebar content ─────────────────────────────────── */
 function SidebarContent({ user, onNavClick, onLogout }) {
   const isReceptionist = user?.role === 'receptionist'
-  const navMain    = isReceptionist ? RECEPTIONIST_NAV_MAIN    : MANAGER_NAV_MAIN
-  const navSupport = isReceptionist ? RECEPTIONIST_NAV_SUPPORT : MANAGER_NAV_SUPPORT
-  const firstName  = user?.name?.split(' ')[0] || 'there'
+  const navMain   = isReceptionist ? RECEPTIONIST_NAV_MAIN : MANAGER_NAV_MAIN
+  const firstName = user?.name?.split(' ')[0] || 'there'
   const initials   = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??'
   const dayName    = new Date().toLocaleDateString('en-US', { weekday: 'long' })
   const dateFmt    = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
@@ -93,14 +84,6 @@ function SidebarContent({ user, onNavClick, onLogout }) {
       <div className="nav-section">
         <div className="nav-section-title">Main Menu</div>
         {navMain.map(item => (
-          <NavItem key={item.id} item={item} onClick={onNavClick} />
-        ))}
-      </div>
-
-      {/* Support nav */}
-      <div className="nav-section">
-        <div className="nav-section-title">Support</div>
-        {navSupport.map(item => (
           <NavItem key={item.id} item={item} onClick={onNavClick} />
         ))}
       </div>
@@ -187,9 +170,6 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
         <button className="icon-btn" title="Notifications">
           <Bell size={16} />
           <span className="dot" />
-        </button>
-        <button className="icon-btn" title="Settings">
-          <Settings size={16} />
         </button>
       </div>
     </header>
