@@ -23,26 +23,48 @@ function StatCard({ label, value, icon: Icon, iconBg, iconColor }) {
     <div style={{
       background: 'var(--card)',
       border: '1px solid var(--border)',
-      borderRadius: 18,
-      padding: '18px 20px',
+      borderRadius: 16,
+      padding: '18px 20px 16px',
       position: 'relative',
       overflow: 'hidden',
-      transition: 'box-shadow 200ms ease, transform 200ms ease',
+      transition: 'box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease',
       cursor: 'default',
     }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(0,0,0,0.18)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-2px)'
+        e.currentTarget.style.boxShadow = '0 12px 32px -12px rgba(0,0,0,0.35)'
+        e.currentTarget.style.borderColor = 'var(--border-strong)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = ''
+        e.currentTarget.style.boxShadow = ''
+        e.currentTarget.style.borderColor = ''
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</p>
+      {/* Top row: icon left, three-dots right */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{
-          width: 32, height: 32, borderRadius: 10,
+          width: 36, height: 36, borderRadius: 10,
           background: iconBg, display: 'grid', placeItems: 'center', flexShrink: 0,
         }}>
-          <Icon size={15} style={{ color: iconColor }} />
+          <Icon size={16} style={{ color: iconColor }} />
+        </div>
+        <div style={{ display: 'flex', gap: 3, paddingTop: 5 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-faint)' }} />
+          ))}
         </div>
       </div>
-      <p style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</p>
+      {/* Label */}
+      <p style={{
+        fontSize: 10.5, fontWeight: 600, color: 'var(--text-dim)',
+        textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8,
+      }}>{label}</p>
+      {/* Value */}
+      <p style={{
+        fontSize: 28, fontWeight: 700, color: 'var(--text)',
+        letterSpacing: '-0.03em', lineHeight: 1, fontFamily: 'var(--font-mono)',
+      }}>{value}</p>
     </div>
   )
 }
@@ -258,13 +280,13 @@ export default function ReceptionistDashboard() {
           onClick={() => navigate('/receptionist/new-job')}
           style={{
             display: 'flex', alignItems: 'center', gap: 7,
-            background: 'linear-gradient(135deg, var(--accent-500), var(--accent-600))',
+            background: 'var(--accent-500)',
             color: 'white',
             border: 0, borderRadius: 12, cursor: 'pointer',
             padding: '9px 16px', fontSize: 13, fontWeight: 600,
             fontFamily: 'inherit', flexShrink: 0,
-            boxShadow: '0 6px 18px -6px rgba(var(--accent-glow)/0.5)',
-            transition: 'opacity 150ms ease, transform 150ms ease',
+            boxShadow: '0 6px 18px -6px rgba(var(--accent-glow)/0.45)',
+            transition: 'background 150ms ease, opacity 150ms ease, transform 150ms ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
           onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -290,7 +312,7 @@ export default function ReceptionistDashboard() {
                 padding: '6px 14px', borderRadius: 10, border: '1px solid',
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                 textTransform: 'capitalize', transition: 'all 150ms ease',
-                background: filter === f ? 'linear-gradient(135deg, var(--accent-500), var(--accent-600))' : 'var(--pill-bg)',
+                background: filter === f ? 'var(--accent-500)' : 'var(--pill-bg)',
                 borderColor: filter === f ? 'transparent' : 'var(--border)',
                 color: filter === f ? 'white' : 'var(--text-muted)',
                 boxShadow: filter === f ? '0 4px 12px -4px rgba(var(--accent-glow)/0.4)' : 'none',

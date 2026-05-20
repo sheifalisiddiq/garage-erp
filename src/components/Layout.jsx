@@ -119,8 +119,11 @@ function SidebarContent({ user, onNavClick, onLogout }) {
 }
 
 /* ── Top bar ─────────────────────────────────────────── */
-function TopBar({ theme, toggleTheme, onMenuOpen }) {
+function TopBar({ theme, toggleTheme, onMenuOpen, user }) {
   const { search, setSearch } = useSearch()
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??'
+  const email    = user?.email || `${(user?.name || '').toLowerCase().replace(/\s+/g, '.')}@pitstop.shop`
+
   return (
     <header className="topbar">
       {/* Mobile hamburger */}
@@ -138,7 +141,7 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
       <div className="searchbar">
         <Search size={16} />
         <input
-          placeholder="Search jobs, customers, plates…"
+          placeholder="Ask Pitstop AI — vehicle, plate, customer…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           aria-label="Search"
@@ -160,6 +163,21 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
           <Bell size={16} />
           <span className="dot" />
         </button>
+        <button className="icon-btn" title="Settings" aria-label="Settings">
+          <Settings size={16} />
+        </button>
+
+        {/* Profile chip */}
+        <div className="profile-chip" style={{ gap: 8 }}>
+          <div className="avatar" style={{ width: 28, height: 28, fontSize: 11 }}>{initials}</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="profile-name" style={{ fontSize: 12 }}>{user?.name}</div>
+            <div className="profile-role" style={{ fontSize: 10.5 }}>{email}</div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ color: 'var(--text-dim)', flexShrink: 0 }}>
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
       </div>
     </header>
   )
@@ -169,7 +187,7 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [theme, setTheme] = useState(() => localStorage.getItem('pitstop-theme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('pitstop-theme') || 'dark')
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
@@ -237,7 +255,7 @@ export default function Layout({ children }) {
 
       {/* ── Main shell ──────────────────────────────────── */}
       <div className="shell">
-        <TopBar theme={theme} toggleTheme={toggleTheme} onMenuOpen={() => setDrawerOpen(true)} />
+        <TopBar theme={theme} toggleTheme={toggleTheme} onMenuOpen={() => setDrawerOpen(true)} user={user} />
         <main className="page">
           {children}
         </main>

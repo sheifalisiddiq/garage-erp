@@ -237,55 +237,96 @@ function PerformanceChart({ chartData }) {
   )
 }
 
-/* ── KPI strip — replaces the banned hero-metric template ── */
-function KpiStrip({ revenueToday, openJobs, completedToday, avgTicket, pendingInvoices, revenuePending }) {
+/* ── Hero Revenue card ───────────────────────────────────── */
+function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendingInvoices, revenueYesterday }) {
   const { whole, cents } = fmtRevenue(revenueToday)
 
-  const items = [
-    {
-      label: 'Revenue today',
-      value: revenueToday > 0 ? `AED ${whole}.${cents}` : 'AED 0.00',
-      mono: true,
-    },
-    {
-      label: 'Active jobs',
-      value: String(openJobs),
-      cls: openJobs > 0 ? '' : 'muted',
-    },
-    {
-      label: 'Completed',
-      value: String(completedToday),
-      cls: completedToday > 0 ? 'ok' : 'muted',
-    },
-    {
-      label: 'Avg. ticket',
-      value: avgTicket > 0
-        ? 'AED ' + avgTicket.toLocaleString('en-AE', { maximumFractionDigits: 0 })
-        : '—',
-      mono: avgTicket > 0,
-    },
-    {
-      label: 'Pending payment',
-      value: pendingInvoices > 0 ? formatAED(revenuePending) : 'Clear',
-      cls: pendingInvoices > 0 ? 'warn' : 'ok',
-      mono: pendingInvoices > 0,
-    },
+  const revDelta = revenueYesterday > 0
+    ? (revenueToday - revenueYesterday) / revenueYesterday * 100
+    : null
+  const revDeltaAbs = revenueToday - revenueYesterday
+  const bayUtil = Math.min(100, Math.round((Math.min(openJobs, 3) / 3) * 100))
+
+  const stats = [
+    { label: 'Active Jobs',     value: String(openJobs),
+      dot: 'var(--info)',   dotBg: 'var(--info-soft)' },
+    { label: 'Avg. Ticket',
+      value: avgTicket > 0 ? `$${Math.round(avgTicket).toLocaleString()}` : '—',
+      dot: 'var(--ok)',     dotBg: 'var(--ok-soft)' },
+    { label: 'Pending Invoice',
+      value: revenuePending > 0 ? `$${(revenuePending / 1000).toFixed(1)}K` : '$0',
+      dot: 'var(--warn)',   dotBg: 'var(--warn-soft)' },
+    { label: 'Bay Utilization', value: `${bayUtil}%`,
+      dot: 'var(--accent-400)', dotBg: 'rgba(var(--accent-glow)/0.12)' },
   ]
 
   return (
-    <div className="kpi-strip">
-      {items.map((item, i) => (
-        <div key={item.label} style={{ display: 'contents' }}>
-          {i > 0 && <div className="kpi-div" />}
-          <div className="kpi-item">
-            <span className="kpi-label">{item.label}</span>
-            <span className={['kpi-value', item.cls || '', item.mono ? 'mono' : ''].filter(Boolean).join(' ')}>
-              {item.value}
-            </span>
+    <section className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="card-head" style={{ marginBottom: 14 }}>
+        <div className="card-title">Today's Revenue</div>
+        <button className="chip" style={{ fontSize: 11 }}>Today <span style={{ fontSize: 9 }}>▾</span></button>
+      </div>
+
+      {/* Hero number */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, margin: '4px 0 10px' }}>
+        <span style={{
+          fontSize: 20, fontWeight: 700, color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)', paddingBottom: 9,
+        }}>$</span>
+        <span style={{
+          fontSize: 54, fontWeight: 800, letterSpacing: '-0.045em',
+          color: 'var(--text)', lineHeight: 1, fontFamily: 'var(--font-mono)',
+        }}>{whole}</span>
+        <span style={{
+          fontSize: 27, fontWeight: 600, color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)', paddingBottom: 5,
+        }}>.{cents}</span>
+      </div>
+
+      {/* Return / delta row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>Return</span>
+        {revDelta !== null ? (
+          <span className={'delta ' + (revDelta >= 0 ? 'up' : 'down')}>
+            {revDelta >= 0 ? '↑' : '↓'}{' '}{Math.abs(revDelta).toFixed(1)}%
+            {' '}({revDeltaAbs >= 0 ? '+' : '-'}${Math.abs(Math.round(revDeltaAbs)).toLocaleString()})
+          </span>
+        ) : (
+          <span className="delta up">↑ —</span>
+        )}
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>· vs yesterday</span>
+      </div>
+
+      {/* 4-cell stat strip */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 'auto',
+      }}>
+        {stats.map((s, i) => (
+          <div key={s.label} style={{
+            paddingLeft: i === 0 ? 0 : 12,
+            paddingRight: i === stats.length - 1 ? 0 : 8,
+            borderLeft: i > 0 ? '1px solid var(--border)' : 'none',
+            display: 'flex', flexDirection: 'column', gap: 5,
+          }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: 7,
+              background: s.dotBg, display: 'grid', placeItems: 'center', marginBottom: 2,
+            }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot }} />
+            </div>
+            <div style={{
+              fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase',
+              letterSpacing: '0.08em', color: 'var(--text-dim)',
+            }}>{s.label}</div>
+            <div style={{
+              fontSize: 18, fontWeight: 700, letterSpacing: '-0.025em',
+              color: 'var(--text)', fontFamily: 'var(--font-mono)',
+            }}>{s.value}</div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -741,11 +782,18 @@ export default function ManagerDashboard() {
       }
     })
 
+    const isYest = d => {
+      const y = new Date(); y.setDate(y.getDate() - 1)
+      return new Date(d).toDateString() === y.toDateString()
+    }
+    const paidYesterday = jobs.filter(j => isYest(j.created_at) && j.status === 'complete' && invMap[j.id]?.status === 'paid')
+    const revenueYesterday = paidYesterday.reduce((s, j) => s + Number(invMap[j.id]?.total_amount || 0), 0)
+
     const chartData = buildChartData(invoices)
 
     setData({
       todayJobs, openJobs, completedToday, paidToday,
-      pendingInvoices, revenueToday, revenuePending, avgTicket,
+      pendingInvoices, revenueToday, revenuePending, avgTicket, revenueYesterday,
       invoices: invMap,
       mechPerf: Object.values(mechPerf).sort((a, b) => b.jobs - a.jobs || b.revenue - a.revenue),
       chartData,
@@ -814,28 +862,24 @@ export default function ManagerDashboard() {
         </div>
       </div>
 
-      {/* ── KPI strip ─────────────────────────────────────── */}
-      <div className="animate-fade-up stagger-2">
-        <KpiStrip
+      {/* ── Top grid: Revenue hero + Active Bays ────────────── */}
+      <div className="top-grid animate-fade-up stagger-2">
+        <HeroRevenue
           revenueToday={data.revenueToday}
           openJobs={data.openJobs.length}
-          completedToday={data.completedToday.length}
           avgTicket={data.avgTicket}
-          pendingInvoices={data.pendingInvoices.length}
           revenuePending={data.revenuePending}
+          pendingInvoices={data.pendingInvoices.length}
+          revenueYesterday={data.revenueYesterday}
         />
-      </div>
-
-      {/* ── Active bays ───────────────────────────────────── */}
-      <div className="animate-fade-up stagger-3">
         <ActiveBays openJobs={data.openJobs} totalBays={3} />
       </div>
 
       {/* ── Revenue chart ────────────────────────────────── */}
-      <div className="animate-fade-up stagger-4"><PerformanceChart chartData={data.chartData} /></div>
+      <div className="animate-fade-up stagger-3"><PerformanceChart chartData={data.chartData} /></div>
 
       {/* ── Bottom grid: jobs table + pending ───────────── */}
-      <div className="bottom-grid animate-fade-up stagger-5">
+      <div className="bottom-grid animate-fade-up stagger-4">
         <JobsTable todayJobs={data.todayJobs} invoices={data.invoices} />
         <PendingPanel pendingInvoices={data.pendingInvoices} mechPerf={data.mechPerf} />
       </div>
