@@ -1,7 +1,87 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Wrench, ChevronDown } from 'lucide-react'
+import { Wrench, ChevronDown, Check } from 'lucide-react'
+
+const ROLES = [
+  { value: 'receptionist', label: 'Receptionist' },
+  { value: 'manager',      label: 'Manager / Owner' },
+  { value: 'admin',        label: 'Admin (Multi-garage)' },
+]
+
+function RoleDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const selected = ROLES.find(r => r.value === value)
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="form-input"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          cursor: 'pointer', textAlign: 'left',
+          borderColor: open ? 'var(--accent-500)' : undefined,
+          boxShadow: open ? '0 0 0 3px rgba(var(--accent-glow)/0.15)' : undefined,
+        }}
+      >
+        <span style={{ color: 'var(--text)' }}>{selected?.label}</span>
+        <ChevronDown
+          size={14}
+          style={{
+            color: 'var(--text-dim)', flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 160ms ease',
+          }}
+        />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+          background: 'var(--card-elev)',
+          border: '1px solid var(--border-strong)',
+          borderRadius: 12,
+          boxShadow: '0 16px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+          overflow: 'hidden',
+          zIndex: 50,
+          animation: 'dropdownIn 0.15s cubic-bezier(0.16,1,0.3,1) both',
+        }}>
+          {ROLES.map(r => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => { onChange(r.value); setOpen(false) }}
+              style={{
+                width: '100%', textAlign: 'left',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 10, padding: '10px 14px',
+                background: r.value === value ? 'rgba(var(--accent-glow)/0.12)' : 'transparent',
+                border: 0, cursor: 'pointer',
+                color: r.value === value ? 'var(--accent-400)' : 'var(--text)',
+                fontSize: 13.5, fontFamily: 'inherit',
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={e => { if (r.value !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
+            >
+              {r.label}
+              {r.value === value && <Check size={13} style={{ flexShrink: 0 }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Login() {
   const { login } = useAuth()
@@ -82,22 +162,7 @@ export default function Login() {
               {/* Role selector */}
               <div>
                 <label className="form-label">Select your role</label>
-                <div style={{ position: 'relative' }}>
-                  <select
-                    value={role}
-                    onChange={e => setRole(e.target.value)}
-                    className="form-input"
-                    style={{ appearance: 'none', paddingRight: 36, cursor: 'pointer' }}
-                  >
-                    <option value="receptionist">Receptionist</option>
-                    <option value="manager">Manager / Owner</option>
-                    <option value="admin">Admin (Multi-garage)</option>
-                  </select>
-                  <ChevronDown
-                    size={14}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none' }}
-                  />
-                </div>
+                <RoleDropdown value={role} onChange={setRole} />
               </div>
 
               {/* Demo user preview */}
@@ -147,7 +212,10 @@ export default function Login() {
         </div>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes dropdownIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      `}</style>
     </div>
   )
 }
