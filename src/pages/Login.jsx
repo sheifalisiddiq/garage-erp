@@ -73,41 +73,44 @@ function RoleDropdown({ value, onChange }) {
         />
       </button>
 
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
-          background: '#1c1c2e',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 12,
-          boxShadow: '0 20px 48px -12px rgba(0,0,0,0.8)',
-          overflow: 'hidden',
-          zIndex: 50,
-          animation: 'dropdownIn 0.15s cubic-bezier(0.16,1,0.3,1) both',
-        }}>
-          {ROLES.map(r => (
-            <button
-              key={r.value}
-              type="button"
-              onClick={() => { onChange(r.value); setOpen(false) }}
-              style={{
-                width: '100%', textAlign: 'left',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                gap: 10, padding: '11px 16px',
-                background: r.value === value ? 'rgba(var(--accent-glow)/0.10)' : 'transparent',
-                border: 0, cursor: 'pointer',
-                color: r.value === value ? 'var(--accent-400)' : 'rgba(255,255,255,0.75)',
-                fontSize: 13.5, fontFamily: 'inherit',
-                transition: 'background 120ms ease',
-              }}
-              onMouseEnter={e => { if (r.value !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-              onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
-            >
-              {r.label}
-              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: 'var(--accent-400)' }} />}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Always rendered — CSS opacity/transform gives exit animation */}
+      <div style={{
+        position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+        background: '#1c1c2e',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: 12,
+        boxShadow: '0 20px 48px -12px rgba(0,0,0,0.8)',
+        overflow: 'hidden',
+        zIndex: 50,
+        opacity: open ? 1 : 0,
+        transform: open ? 'none' : 'translateY(-4px) scale(0.95)',
+        pointerEvents: open ? 'auto' : 'none',
+        visibility: open ? 'visible' : 'hidden',
+        transition: 'opacity 150ms cubic-bezier(0.23,1,0.32,1), transform 150ms cubic-bezier(0.23,1,0.32,1), visibility 0s linear ' + (open ? '0s' : '150ms'),
+      }}>
+        {ROLES.map(r => (
+          <button
+            key={r.value}
+            type="button"
+            onClick={() => { onChange(r.value); setOpen(false) }}
+            style={{
+              width: '100%', textAlign: 'left',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 10, padding: '11px 16px',
+              background: r.value === value ? 'rgba(var(--accent-glow)/0.10)' : 'transparent',
+              border: 0, cursor: 'pointer',
+              color: r.value === value ? 'var(--accent-400)' : 'rgba(255,255,255,0.75)',
+              fontSize: 13.5, fontFamily: 'inherit',
+              transition: 'background 120ms cubic-bezier(0.23,1,0.32,1), transform 80ms cubic-bezier(0.23,1,0.32,1)',
+            }}
+            onMouseEnter={e => { if (r.value !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+            onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
+          >
+            {r.label}
+            {r.value === value && <Check size={13} style={{ flexShrink: 0, color: 'var(--accent-400)' }} />}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -165,7 +168,7 @@ export default function Login() {
       <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
 
         {/* Logo above card */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div className="animate-fade-up stagger-1" style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -189,7 +192,7 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div style={{
+        <div className="animate-fade-up stagger-2" style={{
           background: 'rgba(18,18,30,0.85)',
           border: '1px solid rgba(255,255,255,0.09)',
           borderRadius: 20,
@@ -264,32 +267,21 @@ export default function Login() {
               </span>
             </div>
 
-            {/* Submit button — lime/chartreuse */}
+            {/* Submit button — uses btn-primary class for CSS :active press feedback */}
             <button
               type="submit"
               disabled={loading}
+              className="btn-primary"
               style={{
                 width: '100%',
                 padding: '14px 20px',
                 marginTop: 6,
-                border: 0,
                 borderRadius: 12,
-                background: loading ? 'rgba(var(--accent-glow)/0.55)' : 'var(--accent-500)',
-                color: 'white',
                 fontSize: 15,
                 fontWeight: 700,
-                fontFamily: 'inherit',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
-                boxShadow: loading ? 'none' : '0 8px 24px -8px rgba(var(--accent-glow)/0.5)',
                 letterSpacing: '-0.01em',
+                boxShadow: loading ? 'none' : undefined,
               }}
-              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = 'var(--accent-600)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = 'var(--accent-500)'; e.currentTarget.style.transform = 'translateY(0)'; } }}
             >
               {loading ? (
                 <>
@@ -309,16 +301,13 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 22 }}>
+        <div className="animate-fade-up stagger-3" style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 22 }}>
           Pitstop Garage ERP ·{' '}
           <span style={{ color: 'var(--accent-400)', cursor: 'default' }}>Dubai Auto Services</span>
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes dropdownIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

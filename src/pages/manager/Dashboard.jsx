@@ -785,7 +785,7 @@ export default function ManagerDashboard() {
   return (
     <>
       {/* ── Page header ─────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div className="animate-fade-up stagger-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
           <div style={{ fontSize: 11.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>
             {dateLabel}
@@ -820,16 +820,16 @@ export default function ManagerDashboard() {
       </div>
 
       {/* ── Top grid: hero + bays ────────────────────────── */}
-      <div className="top-grid">
+      <div className="top-grid animate-fade-up stagger-2">
         <HeroRevenue revenueToday={data.revenueToday} kpis={kpis} />
         <ActiveBays openJobs={data.openJobs} totalBays={3} />
       </div>
 
       {/* ── Revenue chart ────────────────────────────────── */}
-      <PerformanceChart chartData={data.chartData} />
+      <div className="animate-fade-up stagger-3"><PerformanceChart chartData={data.chartData} /></div>
 
       {/* ── Bottom grid: jobs table + pending ───────────── */}
-      <div className="bottom-grid">
+      <div className="bottom-grid animate-fade-up stagger-4">
         <JobsTable todayJobs={data.todayJobs} invoices={data.invoices} />
         <PendingPanel pendingInvoices={data.pendingInvoices} mechPerf={data.mechPerf} />
       </div>

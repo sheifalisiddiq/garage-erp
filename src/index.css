@@ -57,6 +57,11 @@
   --color-border:  rgba(255,255,255,0.06);
   --color-brand:   #6366f1;
   --radius-card:   14px;
+
+  /* ── Custom easing (Emil: built-in easings lack punch) ── */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ---------- LIGHT ---------- */
@@ -194,9 +199,10 @@ button { font-family: inherit; cursor: pointer; }
   background: transparent; border: 0;
   width: 100%; text-align: left;
   text-decoration: none;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out), transform 100ms var(--ease-out);
 }
 .nav-item:hover { background: var(--pill-bg); color: var(--text); }
+.nav-item:active { transform: scale(0.97); }
 .nav-item.is-active {
   background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
   color: white;
@@ -264,10 +270,11 @@ button { font-family: inherit; cursor: pointer; }
   width: 38px; height: 38px; border-radius: 999px;
   background: var(--pill-bg); border: 1px solid var(--border);
   display: grid; place-items: center; color: var(--text-muted);
-  transition: all 160ms ease; position: relative;
+  transition: color 150ms var(--ease-out), background 150ms var(--ease-out), transform 100ms var(--ease-out); position: relative;
   flex-shrink: 0;
 }
-.icon-btn:hover { color: var(--text); background: var(--pill-bg-hover); }
+.icon-btn:hover  { color: var(--text); background: var(--pill-bg-hover); }
+.icon-btn:active { transform: scale(0.92); transition-duration: 60ms; }
 .icon-btn svg { width: 16px; height: 16px; }
 .icon-btn .dot {
   position: absolute; top: 8px; right: 9px; width: 7px; height: 7px;
@@ -328,9 +335,10 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 12px; font-weight: 500; color: var(--text-muted);
   background: var(--pill-bg); border: 1px solid var(--border);
   border-radius: 999px; padding: 6px 12px;
-  transition: all 160ms ease;
+  transition: color 150ms var(--ease-out), background 150ms var(--ease-out), border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), transform 100ms var(--ease-out);
 }
 .chip:hover { color: var(--text); background: var(--pill-bg-hover); }
+.chip:active { transform: scale(0.97); transition-duration: 60ms; }
 .chip.is-active {
   background: var(--accent-500); color: white;
   border-color: transparent;
@@ -401,9 +409,12 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px solid var(--border);
   border-radius: 16px; padding: 14px 16px;
   display: flex; flex-direction: column; gap: 10px;
-  transition: transform 160ms ease, border-color 160ms ease;
+  transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out);
 }
-.bay:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+.bay:hover { border-color: var(--border-strong); }
+@media (hover: hover) and (pointer: fine) {
+  .bay:hover { transform: translateY(-2px); }
+}
 .bay-head  { display: flex; align-items: center; justify-content: space-between; }
 .bay-tag   {
   font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
@@ -609,22 +620,39 @@ button { font-family: inherit; cursor: pointer; }
 .glow-brand { box-shadow: 0 0 24px rgba(99,102,241,0.15); }
 
 /* ── Animations ──────────────────────────────────────── */
-@keyframes fadeUp   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scaleIn  { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-@keyframes pingSlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes fadeUp      { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn      { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn     { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes pingSlow    { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes dropdownIn  { from { opacity: 0; transform: translateY(-4px) scale(0.95); } to { opacity: 1; transform: none; } }
 
-.animate-fade-up  { animation: fadeUp  0.45s cubic-bezier(0.16,1,0.3,1) both; }
-.animate-fade-in  { animation: fadeIn  0.3s ease both; }
-.animate-scale-in { animation: scaleIn 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-fade-up   { animation: fadeUp  0.4s var(--ease-out) both; }
+.animate-fade-in   { animation: fadeIn  0.3s var(--ease-out) both; }
+.animate-scale-in  { animation: scaleIn 0.25s var(--ease-out) both; }
 .animate-pulse-slow { animation: pingSlow 3s cubic-bezier(0.4,0,0.6,1) infinite; }
+.animate-dropdown  { animation: dropdownIn 0.15s var(--ease-out) both; }
 
 .stagger-1 { animation-delay: 0ms; }
-.stagger-2 { animation-delay: 65ms; }
-.stagger-3 { animation-delay: 130ms; }
-.stagger-4 { animation-delay: 195ms; }
-.stagger-5 { animation-delay: 260ms; }
-.stagger-6 { animation-delay: 325ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 180ms; }
+.stagger-5 { animation-delay: 240ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+/* ── Chart tooltip smooth follow ─────────────────────── */
+.chart-tooltip { transition: left 80ms var(--ease-out), top 80ms var(--ease-out); }
+
+/* ── prefers-reduced-motion: fewer animations, not zero ─ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .live-dot          { animation: none !important; }
+  .animate-pulse-slow { animation: none !important; }
+}
 
 /* ── Brand color opacity utilities (Tailwind can't apply opacity to CSS-var colors) ── */
 .bg-brand-400\/10 { background-color: rgb(var(--accent-glow) / 0.10) !important; }
@@ -738,20 +766,23 @@ button { font-family: inherit; cursor: pointer; }
   padding: 10px 20px; border-radius: 10px; border: 0;
   background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
   color: white; font-size: 13.5px; font-weight: 600; font-family: inherit;
-  cursor: pointer; transition: opacity 160ms ease, transform 160ms ease;
+  cursor: pointer; transition: opacity 150ms var(--ease-out), transform 100ms var(--ease-out);
   box-shadow: 0 8px 20px -8px rgba(var(--accent-glow)/0.55);
 }
-.btn-primary:hover   { opacity: 0.88; transform: translateY(-1px); }
-.btn-primary:active  { transform: translateY(0); opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+}
+.btn-primary:active   { transform: scale(0.97) !important; opacity: 1 !important; transition-duration: 60ms !important; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-secondary {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 9px 18px; border-radius: 10px;
   background: var(--pill-bg); border: 1px solid var(--border);
   color: var(--text-muted); font-size: 13px; font-weight: 500; font-family: inherit;
-  cursor: pointer; transition: all 160ms ease;
+  cursor: pointer; transition: color 150ms var(--ease-out), background 150ms var(--ease-out), border-color 150ms var(--ease-out), transform 100ms var(--ease-out);
 }
-.btn-secondary:hover { background: var(--pill-bg-hover); color: var(--text); }
+.btn-secondary:hover  { background: var(--pill-bg-hover); color: var(--text); }
+.btn-secondary:active { transform: scale(0.97); transition-duration: 60ms; }
 
 /* ── Select / dropdown ────────────────────────────────────── */
 select {

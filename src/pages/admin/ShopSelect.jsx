@@ -72,7 +72,7 @@ export default function ShopSelect() {
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 860 }}>
         {/* Brand + user chip */}
-        <div style={{ textAlign: 'center', marginBottom: 44 }}>
+        <div className="animate-fade-up stagger-1" style={{ textAlign: 'center', marginBottom: 44 }}>
           <div className="brand-mark" style={{
             width: 52, height: 52, borderRadius: 16, margin: '0 auto 16px',
             boxShadow: '0 20px 50px -20px rgba(var(--accent-glow)/0.55)',
@@ -126,8 +126,10 @@ export default function ShopSelect() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: 16,
         }}>
-          {GARAGES.map((garage) => (
-            <GarageCard key={garage.id} garage={garage} onSelect={handleSelect} />
+          {GARAGES.map((garage, i) => (
+            <div key={garage.id} className={`animate-fade-up stagger-${i + 2}`}>
+              <GarageCard garage={garage} onSelect={handleSelect} />
+            </div>
           ))}
         </div>
 
@@ -155,7 +157,7 @@ function GarageCard({ garage, onSelect }) {
         borderRadius: 20,
         padding: '22px 22px 20px',
         cursor: garage.active ? 'pointer' : 'not-allowed',
-        transition: 'all 180ms ease',
+        transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), border-color 150ms ease, box-shadow 200ms cubic-bezier(0.23,1,0.32,1)',
         opacity: garage.active ? 1 : 0.42,
         position: 'relative',
         overflow: 'hidden',
@@ -174,6 +176,8 @@ function GarageCard({ garage, onSelect }) {
           ? 'rgba(var(--accent-glow)/0.22)'
           : 'var(--border)'
       }}
+      onMouseDown={e => { if (garage.active) e.currentTarget.style.transform = 'scale(0.97)' }}
+      onMouseUp={e => { if (garage.active) e.currentTarget.style.transform = 'translateY(-3px)' }}
     >
       {/* Live badge */}
       {garage.active && (
