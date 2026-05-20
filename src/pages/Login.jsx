@@ -1,13 +1,31 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Wrench, ChevronDown, Check } from 'lucide-react'
+import { Wrench, ChevronDown, Check, User } from 'lucide-react'
 
 const ROLES = [
   { value: 'receptionist', label: 'Receptionist' },
   { value: 'manager',      label: 'Manager / Owner' },
   { value: 'admin',        label: 'Admin (Multi-garage)' },
 ]
+
+const DEMO_NAMES = {
+  receptionist: 'Mariam Al-Zaabi',
+  manager:      'Saeed Al-Mansoori',
+  admin:        'Ahmad Al-Rashid',
+}
+
+const DEMO_DESC = {
+  receptionist: 'Receptionist — Jobs, inventory & settings',
+  manager:      'Manager — Read-only analytics',
+  admin:        'Admin — Multi-garage management',
+}
+
+const DEMO_INITIALS = {
+  receptionist: 'MA',
+  manager:      'SM',
+  admin:        'AR',
+}
 
 function RoleDropdown({ value, onChange }) {
   const [open, setOpen] = useState(false)
@@ -25,19 +43,30 @@ function RoleDropdown({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="form-input"
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', textAlign: 'left',
-          borderColor: open ? 'var(--accent-500)' : undefined,
-          boxShadow: open ? '0 0 0 3px rgba(var(--accent-glow)/0.15)' : undefined,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '13px 16px',
+          background: 'rgba(255,255,255,0.06)',
+          border: `1px solid ${open ? 'rgba(200,240,60,0.5)' : 'rgba(255,255,255,0.10)'}`,
+          borderRadius: 12,
+          cursor: 'pointer',
+          textAlign: 'left',
+          boxShadow: open ? '0 0 0 3px rgba(200,240,60,0.10)' : 'none',
+          transition: 'border-color 160ms ease, box-shadow 160ms ease',
         }}
       >
-        <span style={{ color: 'var(--text)' }}>{selected?.label}</span>
+        <User size={16} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+        <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.85)', fontFamily: 'inherit' }}>
+          {selected?.label}
+        </span>
         <ChevronDown
-          size={14}
+          size={15}
           style={{
-            color: 'var(--text-dim)', flexShrink: 0,
+            color: 'rgba(255,255,255,0.35)',
+            flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform 160ms ease',
           }}
@@ -47,10 +76,10 @@ function RoleDropdown({ value, onChange }) {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
-          background: 'var(--card-elev)',
-          border: '1px solid var(--border-strong)',
+          background: '#1c1c2e',
+          border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 12,
-          boxShadow: '0 16px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+          boxShadow: '0 20px 48px -12px rgba(0,0,0,0.8)',
           overflow: 'hidden',
           zIndex: 50,
           animation: 'dropdownIn 0.15s cubic-bezier(0.16,1,0.3,1) both',
@@ -63,10 +92,10 @@ function RoleDropdown({ value, onChange }) {
               style={{
                 width: '100%', textAlign: 'left',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                gap: 10, padding: '10px 14px',
-                background: r.value === value ? 'rgba(var(--accent-glow)/0.12)' : 'transparent',
+                gap: 10, padding: '11px 16px',
+                background: r.value === value ? 'rgba(200,240,60,0.10)' : 'transparent',
                 border: 0, cursor: 'pointer',
-                color: r.value === value ? 'var(--accent-400)' : 'var(--text)',
+                color: r.value === value ? '#c8f03c' : 'rgba(255,255,255,0.75)',
                 fontSize: 13.5, fontFamily: 'inherit',
                 transition: 'background 120ms ease',
               }}
@@ -74,7 +103,7 @@ function RoleDropdown({ value, onChange }) {
               onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
             >
               {r.label}
-              {r.value === value && <Check size={13} style={{ flexShrink: 0 }} />}
+              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: '#c8f03c' }} />}
             </button>
           ))}
         </div>
@@ -100,7 +129,7 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg)',
+      background: '#0a0a12',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -108,107 +137,181 @@ export default function Login() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Background glow */}
+      {/* Purple glow — right side, like the reference */}
       <div style={{
-        position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
-        width: 600, height: 600, borderRadius: '50%',
-        background: `radial-gradient(circle, rgba(var(--accent-glow)/0.10), transparent 70%)`,
+        position: 'absolute',
+        top: '-10%',
+        right: '-5%',
+        width: '55vw',
+        height: '70vh',
+        borderRadius: '50%',
+        background: 'radial-gradient(ellipse at center, rgba(120,60,220,0.28) 0%, rgba(80,30,180,0.14) 40%, transparent 70%)',
         pointerEvents: 'none',
+        filter: 'blur(40px)',
       }} />
+      {/* Subtle bottom-left dark shadow to balance */}
       <div style={{
-        position: 'absolute', bottom: '10%', right: '20%',
-        width: 300, height: 300, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(245,158,11,0.06), transparent 70%)',
+        position: 'absolute',
+        bottom: '-20%',
+        left: '-10%',
+        width: '40vw',
+        height: '50vh',
+        borderRadius: '50%',
+        background: 'radial-gradient(ellipse at center, rgba(40,20,80,0.18) 0%, transparent 70%)',
         pointerEvents: 'none',
+        filter: 'blur(60px)',
       }} />
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
-        {/* Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div className="brand-mark" style={{
-            width: 56, height: 56, borderRadius: 18,
-            margin: '0 auto 16px',
-            boxShadow: '0 20px 50px -20px rgba(var(--accent-glow)/0.6)',
+
+        {/* Logo above card */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
           }}>
-            <Wrench size={24} color="white" strokeWidth={2.2} />
-          </div>
-          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>
-            Pit<span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>stop</span>
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 8 }}>
-            Garage ERP · Dubai Auto Services
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg, #c8f03c, #a8cc20)',
+              display: 'grid', placeItems: 'center',
+              boxShadow: '0 0 24px rgba(200,240,60,0.3)',
+            }}>
+              <Wrench size={18} color="#0a0a12" strokeWidth={2.5} />
+            </div>
+            <span style={{
+              fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em',
+              color: '#ffffff', fontFamily: 'inherit',
+            }}>
+              Pit<span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>stop</span>
+            </span>
           </div>
         </div>
 
         {/* Card */}
-        <div className="card" style={{
-          padding: '28px 28px 24px',
-          background: 'var(--hero-grad)',
+        <div style={{
+          background: 'rgba(18,18,30,0.85)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 20,
+          padding: '36px 32px 32px',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 32px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
         }}>
-          {/* Noise texture */}
-          <div style={{ position: 'absolute', inset: 0, background: 'var(--hero-noise)', opacity: 0.6, mixBlendMode: 'overlay', pointerEvents: 'none', borderRadius: 'inherit', zIndex: 0 }} />
-          {/* Bottom vignette */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(to bottom, transparent, rgba(5,7,14,0.85))', pointerEvents: 'none', zIndex: 0 }} />
-          {/* Accent glow */}
-          <div style={{ position: 'absolute', right: -40, bottom: -50, width: 220, height: 180, background: 'radial-gradient(closest-side, rgba(var(--accent-glow)/0.16), transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
 
-          {/* Content */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 22, letterSpacing: '-0.01em' }}>
-              Sign in to your workspace
+          {/* Heading */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <h1 style={{
+              margin: 0,
+              fontSize: 32,
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+              color: '#ffffff',
+              lineHeight: 1.1,
+            }}>
+              Log in
+            </h1>
+            <p style={{
+              margin: '10px 0 0',
+              fontSize: 13.5,
+              color: 'rgba(255,255,255,0.42)',
+              lineHeight: 1.4,
+            }}>
+              Welcome back {DEMO_NAMES[role].split(' ')[0]}, please login
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Role selector */}
+            <div>
+              <RoleDropdown value={role} onChange={setRole} />
             </div>
 
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Role selector */}
+            {/* Demo user preview */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 12, padding: '11px 14px',
+            }}>
+              <div className="avatar sm">
+                {DEMO_INITIALS[role]}
+              </div>
               <div>
-                <label className="form-label">Select your role</label>
-                <RoleDropdown value={role} onChange={setRole} />
-              </div>
-
-              {/* Demo user preview */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
-                borderRadius: 12, padding: '10px 14px',
-              }}>
-                <div className="avatar sm">
-                  {role === 'receptionist' ? 'MA' : role === 'manager' ? 'SM' : 'AR'}
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                  {DEMO_NAMES[role]}
                 </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                    {role === 'receptionist' ? 'Mariam Al-Zaabi' : role === 'manager' ? 'Saeed Al-Mansoori' : 'Ahmad Al-Rashid'}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
-                    {role === 'receptionist' ? 'Receptionist — Jobs, inventory & settings' : role === 'manager' ? 'Manager — Read-only analytics' : 'Admin — Multi-garage management'}
-                  </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
+                  {DEMO_DESC[role]}
                 </div>
               </div>
+            </div>
 
-              {/* Demo badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--warn)' }}>
+            {/* Demo badge row — styled like remember/forgot row */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: 12.5,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,0.4)' }}>
                 <div className="live-dot" />
-                Demo mode — no password required
+                Demo mode
               </div>
+              <span style={{ color: '#c8f03c', fontWeight: 500, cursor: 'default' }}>
+                No password required
+              </span>
+            </div>
 
-              {/* Submit */}
-              <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: '12px 20px', marginTop: 4 }}>
-                {loading ? (
-                  <>
-                    <span style={{
-                      width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)',
-                      borderTopColor: 'white', borderRadius: '50%',
-                      display: 'inline-block', animation: 'spin 0.7s linear infinite',
-                    }} />
-                    Signing in...
-                  </>
-                ) : 'Enter Dashboard'}
-              </button>
-            </form>
-          </div>
+            {/* Submit button — lime/chartreuse */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '14px 20px',
+                marginTop: 6,
+                border: 0,
+                borderRadius: 12,
+                background: loading ? 'rgba(200,240,60,0.55)' : '#c8f03c',
+                color: '#0a0a12',
+                fontSize: 15,
+                fontWeight: 700,
+                fontFamily: 'inherit',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
+                boxShadow: loading ? 'none' : '0 8px 24px -8px rgba(200,240,60,0.45)',
+                letterSpacing: '-0.01em',
+              }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = '#d4f54a'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = '#c8f03c'; e.currentTarget.style.transform = 'translateY(0)'; } }}
+            >
+              {loading ? (
+                <>
+                  <span style={{
+                    width: 15, height: 15,
+                    border: '2px solid rgba(10,10,18,0.3)',
+                    borderTopColor: '#0a0a12',
+                    borderRadius: '50%',
+                    display: 'inline-block',
+                    animation: 'spin 0.7s linear infinite',
+                  }} />
+                  Signing in...
+                </>
+              ) : 'Continue'}
+            </button>
+          </form>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', marginTop: 20 }}>
-          Pitstop Garage ERP © 2026 · Dubai, UAE
+        {/* Footer */}
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 22 }}>
+          Pitstop Garage ERP ·{' '}
+          <span style={{ color: '#c8f03c', cursor: 'default' }}>Dubai Auto Services</span>
         </div>
       </div>
 
