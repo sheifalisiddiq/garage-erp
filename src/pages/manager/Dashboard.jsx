@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { formatAED, formatElapsed, formatTime, statusColor, isToday } from '../../lib/utils'
+import { formatAED, formatElapsed, formatTime, isToday } from '../../lib/utils'
 import {
-  Clock, CheckCircle2, AlertCircle, TrendingUp,
-  Wrench, Package, Users, Activity, RefreshCw, Zap
+  RefreshCw, Plus, ArrowUp, ArrowDown, ArrowUpRight,
+  ChevronDown, Clock, Wrench
 } from 'lucide-react'
 
-/* ── Helpers ──────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────── */
 function getGreeting() {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
@@ -15,162 +15,708 @@ function getGreeting() {
   return 'Good evening'
 }
 
-/* ── Live elapsed timer ───────────────────────────────── */
-function LiveElapsedCell({ createdAt }) {
-  const [secs, setSecs] = useState(() =>
-    Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000)
-  )
-  useEffect(() => {
-    const t = setInterval(() =>
-      setSecs(Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000)), 1000)
-    return () => clearInterval(t)
-  }, [createdAt])
+function fmtRevenue(n) {
+  const [whole, cents] = Number(n || 0).toFixed(2).split('.')
+  return {
+    whole: Number(whole).toLocaleString('en-US'),
+    cents,
+  }
+}
+
+function progressFromElapsed(createdAt) {
+  const secs = (Date.now() - new Date(createdAt).getTime()) / 1000
+  return Math.min(secs / (4 * 3600), 0.92)
+}
+
+/* ── Sparkline ───────────────────────────────────────── */
+function Sparkline({ points, dir }) {
+  const W = 90, H = 32
+  const max = Math.max(...points), min = Math.min(...points)
+  const xs = points.map((v, i) => {
+    const x = (i / (points.length - 1)) * W
+    const y = H - ((v - min) / (max - min || 1)) * (H - 6) - 3
+    return [x, y]
+  })
+  const d = xs.map(([x, y], i) => (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1)).join(' ')
+  const color = dir === 'up' ? 'var(--ok)' : 'var(--danger)'
+  const [endX, endY] = xs[xs.length - 1]
   return (
-    <span className="font-mono text-[13px] font-semibold text-blue-400 tabular-nums">
-      {formatElapsed(secs)}
+    <span className="spark">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+        <path d={d} stroke={color} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={endX} cy={endY} r="3" fill={color} />
+        <circle cx={endX} cy={endY} r="6" fill={color} opacity="0.25" />
+      </svg>
     </span>
   )
 }
 
-/* ── Stat card ────────────────────────────────────────── */
-const STAT_COLORS = {
-  emerald: {
-    icon: 'bg-emerald-500/10 text-emerald-400',
-    glow: 'group-hover:shadow-glow-emerald',
-    blob: 'from-emerald-500/10',
-  },
-  gold: {
-    icon: 'bg-amber-500/10 text-amber-400',
-    glow: 'group-hover:shadow-glow-gold',
-    blob: 'from-amber-500/10',
-  },
-  blue: {
-    icon: 'bg-blue-500/10 text-blue-400',
-    glow: 'group-hover:shadow-glow-blue',
-    blob: 'from-blue-500/10',
-  },
-  amber: {
-    icon: 'bg-orange-500/10 text-orange-400',
-    glow: 'group-hover:shadow-glow-amber',
-    blob: 'from-orange-500/10',
-  },
+/* generate deterministic sparkline from a job id + amount */
+function makeSpark(id, amount) {
+  const seed = String(id).split('').reduce((a, c) => a + c.charCodeAt(0), 0) + amount
+  const points = Array.from({ length: 8 }, (_, i) => {
+    const v = ((Math.sin((seed + i * 37) * 0.3) + 1) * 5) + 3
+    return Math.round(v * 10) / 10
+  })
+  const first = points[0], last = points[points.length - 1]
+  return { points, dir: last >= first ? 'up' : 'down' }
 }
 
-function StatCard({ label, value, sub, icon: Icon, color = 'blue', index = 0 }) {
-  const c = STAT_COLORS[color]
-  return (
-    <div
-      className={`group panel relative overflow-hidden cursor-default
-        transition-all duration-300 hover:-translate-y-0.5 ${c.glow}
-        animate-fade-up`}
-      style={{ animationDelay: `${index * 65}ms` }}
-    >
-      {/* Ambient glow blob */}
-      <div className={`absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-radial ${c.blob} to-transparent blur-2xl pointer-events-none opacity-80`} />
+/* ── Revenue chart ───────────────────────────────────── */
+const RANGE_KEYS = ['1D', '1W', '1M', '6M', '1Y']
 
-      <div className="relative p-5">
-        <div className="flex items-start justify-between mb-4">
-          <p className="text-[10.5px] font-semibold text-slate-600 uppercase tracking-[0.08em] leading-none">{label}</p>
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${c.icon} transition-transform duration-200 group-hover:scale-110`}>
-            <Icon className="w-4 h-4" strokeWidth={2} />
-          </div>
+function smooth(p) {
+  if (p.length < 2) return ''
+  let d = `M ${p[0].x} ${p[0].y}`
+  for (let i = 0; i < p.length - 1; i++) {
+    const cp1x = p[i].x + (p[i + 1].x - (p[i - 1]?.x || p[i].x)) / 6
+    const cp1y = p[i].y + (p[i + 1].y - (p[i - 1]?.y || p[i].y)) / 6
+    const cp2x = p[i + 1].x - ((p[i + 2]?.x || p[i + 1].x) - p[i].x) / 6
+    const cp2y = p[i + 1].y - ((p[i + 2]?.y || p[i + 1].y) - p[i].y) / 6
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p[i + 1].x} ${p[i + 1].y}`
+  }
+  return d
+}
+
+function fmtK(v) {
+  if (v >= 1000) return (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 'K'
+  return String(Math.round(v))
+}
+
+function PerformanceChart({ chartData }) {
+  const [range, setRange] = useState('6M')
+  const wrapRef = useRef(null)
+
+  const { labels, values } = useMemo(() => {
+    const d = chartData[range] || { labels: [], values: [] }
+    return d
+  }, [chartData, range])
+
+  const W = 1000, H = 260, P = { l: 56, r: 16, t: 22, b: 36 }
+  const innerW = W - P.l - P.r
+  const innerH = H - P.t - P.b
+  const maxVal = Math.max(...values, 1) * 1.18
+
+  const pts = values.map((v, i) => ({
+    x: P.l + (values.length > 1 ? (i / (values.length - 1)) * innerW : innerW / 2),
+    y: P.t + innerH - (v / maxVal) * innerH,
+    v, label: labels[i] || '',
+  }))
+
+  const defaultIdx = Math.max(0, Math.floor(pts.length / 2) - 1)
+  const [hoverIdx, setHoverIdx] = useState(defaultIdx)
+
+  useEffect(() => {
+    setHoverIdx(Math.max(0, Math.floor(pts.length / 2) - 1))
+  }, [range, pts.length])
+
+  const onMove = (e) => {
+    if (!wrapRef.current || pts.length === 0) return
+    const rect = wrapRef.current.getBoundingClientRect()
+    const xPct = (e.clientX - rect.left) / rect.width
+    const idx = Math.max(0, Math.min(pts.length - 1, Math.round(xPct * (pts.length - 1))))
+    setHoverIdx(idx)
+  }
+
+  const linePath = pts.length > 0 ? smooth(pts) : ''
+  const areaPath = pts.length > 0
+    ? linePath + ` L ${pts[pts.length - 1].x} ${P.t + innerH} L ${pts[0].x} ${P.t + innerH} Z`
+    : ''
+
+  const pt = pts[hoverIdx] || { x: 0, y: 0, v: 0, label: '' }
+  const tipLeft = pts.length > 0 ? (pt.x / W) * 100 : 50
+  const tipTop  = pts.length > 0 ? (pt.y / H) * 100 : 50
+
+  const prevVal = values[Math.max(0, hoverIdx - 1)] || values[0] || 1
+  const pctChange = prevVal > 0 ? ((pt.v / prevVal - 1) * 100).toFixed(1) : '0.0'
+
+  const yTicks = useMemo(() => {
+    const t = []
+    for (let i = 0; i <= 4; i++) {
+      const v = (maxVal / 4) * i
+      const y = P.t + innerH - (v / maxVal) * innerH
+      t.push({ y, v })
+    }
+    return t
+  }, [maxVal])
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div>
+          <div className="card-title">Revenue Performance</div>
+          <div className="card-sub">Net revenue · paid invoices</div>
         </div>
-        <p className="text-[2rem] font-bold text-white leading-none tracking-tighter tabular-nums">{value}</p>
-        {sub && <p className="text-[11.5px] text-slate-600 mt-2 leading-snug">{sub}</p>}
+        <div className="chart-time-row">
+          {RANGE_KEYS.map(r => (
+            <button
+              key={r}
+              className={'chip' + (range === r ? ' is-active' : '')}
+              onClick={() => setRange(r)}
+              style={{ minWidth: 38, justifyContent: 'center' }}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="chart-wrap" ref={wrapRef} onMouseMove={onMove}>
+        <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="var(--accent-500)" stopOpacity="0.32" />
+              <stop offset="60%"  stopColor="var(--accent-500)" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="var(--accent-500)" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stopColor="var(--accent-400)" />
+              <stop offset="100%" stopColor="var(--accent-500)" />
+            </linearGradient>
+          </defs>
+
+          {yTicks.map((t, i) => (
+            <g key={i}>
+              <line x1={P.l} y1={t.y} x2={W - P.r} y2={t.y}
+                stroke="var(--chart-grid)" strokeDasharray="3 6" />
+              <text x={P.l - 12} y={t.y + 4} fill="var(--chart-axis)"
+                fontSize="10.5" textAnchor="end" fontFamily="var(--font-mono)">
+                AED {fmtK(t.v)}
+              </text>
+            </g>
+          ))}
+
+          {pts.map((p, i) => (
+            <text key={i} x={p.x} y={H - 12} fill="var(--chart-axis)"
+              fontSize="10.5" textAnchor="middle">
+              {p.label}
+            </text>
+          ))}
+
+          {pts.length > 0 && <path d={areaPath} fill="url(#areaGrad)" />}
+          {pts.length > 0 && (
+            <path d={linePath} stroke="url(#lineGrad)" strokeWidth="2.4"
+              fill="none" strokeLinecap="round" />
+          )}
+
+          {pts.length > 0 && (
+            <>
+              <line x1={pt.x} y1={P.t} x2={pt.x} y2={P.t + innerH}
+                stroke="var(--accent-500)" strokeDasharray="4 4" strokeWidth="1" opacity="0.6" />
+              <circle cx={pt.x} cy={pt.y} r="9" fill="var(--accent-500)" fillOpacity="0.2" />
+              <circle cx={pt.x} cy={pt.y} r="5" fill="var(--accent-500)"
+                stroke="var(--card)" strokeWidth="2.5" />
+            </>
+          )}
+        </svg>
+
+        {pts.length > 0 && (
+          <div className="chart-tooltip"
+            style={{ left: `calc(${tipLeft}% - 70px)`, top: `calc(${tipTop}% - 70px)` }}>
+            <div className="chart-tooltip-label">{pt.label}</div>
+            <div className="chart-tooltip-value mono">
+              AED {pt.v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}
+              <span className={'delta ' + (Number(pctChange) >= 0 ? 'up' : 'down')}
+                style={{ fontSize: 10 }}>
+                {Number(pctChange) >= 0 ? '↑' : '↓'}{Math.abs(Number(pctChange))}%
+              </span>
+            </div>
+          </div>
+        )}
+
+        {pts.length === 0 && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'grid',
+            placeItems: 'center', color: 'var(--text-dim)', fontSize: 13,
+          }}>
+            No revenue data for this period
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+/* ── Hero revenue card ───────────────────────────────── */
+function HeroRevenue({ revenueToday, kpis }) {
+  const { whole, cents } = fmtRevenue(revenueToday)
+  return (
+    <section className="hero">
+      <div className="hero-deco" />
+      <div className="hero-head">
+        <div className="hero-label">Today's Revenue</div>
+        <button className="chip is-active" style={{ position: 'relative', zIndex: 1 }}>
+          Today <ChevronDown size={12} />
+        </button>
+      </div>
+
+      <div className="hero-amount mono">
+        <span className="currency">AED</span>
+        <span>{whole}</span>
+        <span className="cents">.{cents}</span>
+      </div>
+
+      <div className="hero-row" style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 24 }}>
+        {kpis.map(k => (
+          <div key={k.label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 10.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {k.label}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <b className="mono" style={{ fontSize: 15, color: 'var(--text)' }}>{k.value}</b>
+              {k.delta != null && (
+                <span className={'delta ' + (k.delta >= 0 ? 'up' : 'down')} style={{ fontSize: 10 }}>
+                  {k.delta >= 0 ? '↑' : '↓'}{Math.abs(k.delta)}
+                </span>
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ── Active bays card ─────────────────────────────────── */
+function BayCard({ bay, idx }) {
+  return (
+    <div className="bay">
+      <div className="bay-head">
+        <span className="bay-tag">Bay {String(idx + 1).padStart(2, '0')}</span>
+        <span className={'bay-status ' + bay.statusClass}>{bay.statusLabel}</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="brand-logo">{bay.mark}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="bay-vehicle" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {bay.vehicle}
+          </div>
+          <div className="bay-job">{bay.year} · {bay.plate}</div>
+        </div>
+      </div>
+
+      <div className="bay-job" style={{ color: 'var(--text)', fontWeight: 500 }}>
+        {bay.job}
+      </div>
+
+      <div className="bay-progress">
+        <div style={{ width: (bay.progress * 100) + '%' }} />
+      </div>
+
+      <div className="bay-meta">
+        <span className="bay-eta">
+          <b>{bay.eta}</b> elapsed
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }} className="mono">
+          {Math.round(bay.progress * 100)}%
+        </span>
       </div>
     </div>
   )
 }
 
-/* ── Panel wrappers ───────────────────────────────────── */
-function Panel({ children, className = '', style }) {
+function FreeBay({ idx }) {
   return (
-    <div className={`panel overflow-hidden ${className}`} style={style}>
-      {children}
+    <div className="bay" style={{ opacity: 0.55 }}>
+      <div className="bay-head">
+        <span className="bay-tag">Bay {String(idx + 1).padStart(2, '0')}</span>
+        <span className="bay-status free">Available</span>
+      </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 60 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>No active job</span>
+      </div>
     </div>
   )
 }
 
-function PanelHeader({ icon: Icon, iconClass = 'text-slate-600', title, meta, children }) {
+function ActiveBays({ openJobs, totalBays = 3 }) {
+  const bays = openJobs.slice(0, totalBays).map(job => ({
+    vehicle: `${job.vehicles?.make || ''} ${job.vehicles?.model || ''}`.trim() || 'Unknown Vehicle',
+    year:    job.vehicles?.year || '—',
+    plate:   job.vehicles?.license_plate || '—',
+    job:     (job.job_services?.[0]?.service_name) || 'Service in progress',
+    mark:    (job.vehicles?.make?.[0] || '?').toUpperCase(),
+    eta:     formatElapsed(Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000)),
+    progress: progressFromElapsed(job.created_at),
+    statusClass: 'working',
+    statusLabel: 'In service',
+  }))
+
+  const inService = bays.filter(b => b.statusClass === 'working').length
+  const freeBays  = Math.max(0, totalBays - bays.length)
+
   return (
-    <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-white/[0.05]">
-      {Icon && <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${iconClass}`} strokeWidth={2} />}
-      <span className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-[0.08em]">{title}</span>
-      {meta && <span className="text-[11px] text-slate-700 ml-auto">{meta}</span>}
-      {children}
-    </div>
+    <section className="card" style={{ padding: '20px 22px' }}>
+      <div className="card-head">
+        <div>
+          <div className="card-title">Active Bays</div>
+          <div className="card-sub">
+            {totalBays} bays · {inService} in service · {freeBays} available
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="chip"><Plus size={12} /> Assign job</button>
+          <button className="chip">See all <ArrowUpRight size={12} /></button>
+        </div>
+      </div>
+
+      <div className="bays-row">
+        {bays.map((bay, i) => <BayCard key={i} bay={bay} idx={i} />)}
+        {Array.from({ length: freeBays }).map((_, i) => (
+          <FreeBay key={'free-' + i} idx={bays.length + i} />
+        ))}
+      </div>
+    </section>
   )
 }
 
-/* ── Empty state ──────────────────────────────────────── */
-function Empty({ children }) {
+/* ── Jobs table ──────────────────────────────────────── */
+const JOB_FILTERS = ['All', 'Active', 'Complete', 'Invoiced']
+
+function jobStatus(job, invoices) {
+  if (job.status === 'open')     return { cls: 'in-progress', label: 'In progress' }
+  if (job.status === 'complete') {
+    const inv = invoices[job.id]
+    if (inv?.status === 'paid') return { cls: 'paid',     label: 'Paid' }
+    if (inv)                    return { cls: 'invoiced', label: 'Invoiced' }
+    return { cls: 'complete', label: 'Complete' }
+  }
+  return { cls: 'complete', label: job.status }
+}
+
+function JobsTable({ todayJobs, invoices }) {
+  const [filter, setFilter] = useState('All')
+
+  const visible = todayJobs.filter(j => {
+    if (filter === 'All')      return true
+    if (filter === 'Active')   return j.status === 'open'
+    if (filter === 'Complete') return j.status === 'complete'
+    if (filter === 'Invoiced') return j.status === 'complete' && invoices[j.id]
+    return true
+  })
+
   return (
-    <div className="flex items-center justify-center py-10 px-5">
-      <p className="text-[12px] text-slate-700 text-center">{children}</p>
-    </div>
+    <section className="card">
+      <div className="card-head">
+        <div>
+          <div className="card-title">Today's Jobs</div>
+          <div className="card-sub">Bay activity · last 24h</div>
+        </div>
+        <div className="chart-time-row">
+          {JOB_FILTERS.map(f => (
+            <button
+              key={f}
+              className={'chip' + (filter === f ? ' is-active' : '')}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <table className="jobs-table">
+        <thead>
+          <tr>
+            <th>Vehicle</th>
+            <th>Service</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th style={{ textAlign: 'right' }}>Amount</th>
+            <th style={{ textAlign: 'right' }}>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visible.length === 0 && (
+            <tr>
+              <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '24px 0' }}>
+                No jobs match this filter
+              </td>
+            </tr>
+          )}
+          {visible.map(job => {
+            const { cls, label } = jobStatus(job, invoices)
+            const inv = invoices[job.id]
+            const amount = Number(inv?.total_amount || 0)
+            const spark = makeSpark(job.id, amount)
+            const serviceName = job.job_services?.[0]?.service_name || 'Service'
+            const etaText = job.status === 'open'
+              ? formatElapsed(Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000))
+              : formatTime(job.updated_at || job.created_at)
+            const mark = (job.vehicles?.make?.[0] || '?').toUpperCase()
+
+            return (
+              <tr key={job.id}>
+                <td>
+                  <div className="job-vehicle">
+                    <div className="brand-logo" style={{ width: 32, height: 32, borderRadius: 9, fontSize: 13 }}>
+                      {mark}
+                    </div>
+                    <div>
+                      <div className="job-vehicle-name">
+                        {job.vehicles?.make} {job.vehicles?.model}
+                      </div>
+                      <div className="job-vehicle-meta mono">
+                        {job.vehicles?.license_plate || job.job_number}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div style={{ fontWeight: 500 }}>{serviceName}</div>
+                  <div className="job-vehicle-meta">{etaText}</div>
+                </td>
+                <td>
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    {job.customers?.name || '—'}
+                  </span>
+                </td>
+                <td>
+                  <span className={'status-pill ' + cls}>{label}</span>
+                </td>
+                <td style={{ textAlign: 'right' }} className="mono">
+                  {amount > 0 ? formatAED(amount) : '—'}
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <Sparkline points={spark.points} dir={spark.dir} />
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </section>
   )
 }
 
-/* ── Main dashboard ───────────────────────────────────── */
+/* ── Pending invoices panel (right column) ─────────────── */
+function PendingPanel({ pendingInvoices, mechPerf }) {
+  const [tab, setTab] = useState('invoices')
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div>
+          <div className="card-title">{tab === 'invoices' ? 'Pending Payment' : 'Mechanics'}</div>
+          <div className="card-sub">
+            {tab === 'invoices' ? 'Outstanding invoices' : 'Today\'s performance'}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            className={'chip' + (tab === 'invoices' ? ' is-active' : '')}
+            onClick={() => setTab('invoices')} style={{ padding: '4px 10px', fontSize: 11 }}>
+            Invoices
+          </button>
+          <button
+            className={'chip' + (tab === 'mechs' ? ' is-active' : '')}
+            onClick={() => setTab('mechs')} style={{ padding: '4px 10px', fontSize: 11 }}>
+            Mechanics
+          </button>
+        </div>
+      </div>
+
+      {tab === 'invoices' && (
+        <div className="upnext-list">
+          {pendingInvoices.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-dim)', fontSize: 13 }}>
+              All invoices paid ✓
+            </div>
+          )}
+          {pendingInvoices.map((inv, i) => {
+            const job = inv._job
+            return (
+              <div key={inv.id} className="upnext-item">
+                <div className="upnext-time mono">
+                  {formatTime(inv.created_at)}
+                  <small>{new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="upnext-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {job?.vehicles?.make} {job?.vehicles?.model}
+                  </div>
+                  <div className="upnext-sub">{job?.customers?.name || '—'}</div>
+                </div>
+                <span className="upnext-tag" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                  {formatAED(inv.total_amount)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {tab === 'mechs' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {mechPerf.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-dim)', fontSize: 13 }}>
+              No mechanic data today
+            </div>
+          )}
+          {mechPerf.map(m => {
+            const initials = m.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+            return (
+              <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+                  background: 'rgba(var(--accent-glow)/0.15)',
+                  display: 'grid', placeItems: 'center',
+                  color: 'var(--accent-400)', fontSize: 11, fontWeight: 700,
+                  border: m.activeJob ? '1.5px solid rgba(var(--accent-glow)/0.4)' : '1px solid var(--border)',
+                }}>
+                  {initials}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>
+                    {m.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                    {m.jobs} job{m.jobs !== 1 ? 's' : ''}
+                    {m.revenue > 0 && <span style={{ color: 'var(--warn)', marginLeft: 6 }}>{formatAED(m.revenue)}</span>}
+                    {m.activeJob && <span style={{ color: 'var(--info)', marginLeft: 6 }}>· {m.activeJob}</span>}
+                  </div>
+                </div>
+                {m.activeJob && (
+                  <div style={{
+                    width: 8, height: 8, borderRadius: 999,
+                    background: 'var(--info)',
+                    boxShadow: '0 0 8px var(--info)',
+                  }} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ── Build chart series from invoices ────────────────── */
+function buildChartData(allInvoices) {
+  const now = new Date()
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const dayNames   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  function groupByMonth(months) {
+    const cutoff = new Date(now)
+    cutoff.setMonth(cutoff.getMonth() - months)
+    const map = {}
+    for (let i = 0; i < months; i++) {
+      const d = new Date(now)
+      d.setMonth(d.getMonth() - (months - 1 - i))
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`
+      map[key] = { label: monthNames[d.getMonth()], value: 0 }
+    }
+    allInvoices.forEach(inv => {
+      if (inv.status !== 'paid') return
+      const d = new Date(inv.created_at)
+      if (d < cutoff) return
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`
+      if (map[key]) map[key].value += Number(inv.total_amount || 0)
+    })
+    const entries = Object.values(map)
+    return { labels: entries.map(e => e.label), values: entries.map(e => e.value) }
+  }
+
+  function groupByDay(days) {
+    const map = {}
+    for (let i = 0; i < days; i++) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - (days - 1 - i))
+      const key = d.toDateString()
+      map[key] = {
+        label: days <= 7 ? dayNames[d.getDay()] : `${monthNames[d.getMonth()]} ${d.getDate()}`,
+        value: 0,
+      }
+    }
+    allInvoices.forEach(inv => {
+      if (inv.status !== 'paid') return
+      const d = new Date(inv.created_at)
+      const key = d.toDateString()
+      if (map[key]) map[key].value += Number(inv.total_amount || 0)
+    })
+    const entries = Object.values(map)
+    return { labels: entries.map(e => e.label), values: entries.map(e => e.value) }
+  }
+
+  function groupByHour() {
+    const labels = ['6a','7a','8a','9a','10a','11a','12p','1p','2p','3p','4p','5p','6p','7p','8p']
+    const values = labels.map((_, i) => {
+      const hr = 6 + i
+      return allInvoices
+        .filter(inv => {
+          if (inv.status !== 'paid') return false
+          const d = new Date(inv.created_at)
+          return isToday(inv.created_at) && d.getHours() === hr
+        })
+        .reduce((s, inv) => s + Number(inv.total_amount || 0), 0)
+    })
+    return { labels, values }
+  }
+
+  return {
+    '1D': groupByHour(),
+    '1W': groupByDay(7),
+    '1M': groupByDay(30),
+    '6M': groupByMonth(6),
+    '1Y': groupByMonth(12),
+  }
+}
+
+/* ── Main dashboard ──────────────────────────────────── */
 export default function ManagerDashboard() {
   const { user } = useAuth()
-  const [data, setData] = useState(null)
+  const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(null)
 
   const fetchData = useCallback(async () => {
-    const { data: jobs } = await supabase
-      .from('jobs')
-      .select(`
-        *,
-        customers(name, phone),
-        vehicles(make, model, license_plate),
-        mechanics(name),
-        job_services(*),
-        job_parts(*)
-      `)
-      .order('created_at', { ascending: false })
+    const yearAgo = new Date()
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1)
 
-    const { data: invoices } = await supabase
-      .from('invoices')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const [jobsRes, invoicesRes, mechanicsRes] = await Promise.all([
+      supabase
+        .from('jobs')
+        .select('*, customers(name,phone), vehicles(make,model,year,license_plate), mechanics(name), job_services(*), job_parts(*)')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('invoices')
+        .select('*')
+        .gte('created_at', yearAgo.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('mechanics')
+        .select('*')
+        .eq('status', 'active'),
+    ])
 
-    const { data: mechanics } = await supabase
-      .from('mechanics')
-      .select('*')
-      .eq('status', 'active')
+    const jobs      = jobsRes.data     || []
+    const invoices  = invoicesRes.data || []
+    const mechanics = mechanicsRes.data || []
 
     const invMap = {}
-    invoices?.forEach(i => { invMap[i.job_id] = i })
+    invoices.forEach(inv => { invMap[inv.job_id] = inv })
 
-    const todayJobs     = jobs?.filter(j => isToday(j.created_at)) || []
-    const openJobs      = jobs?.filter(j => j.status === 'open') || []
-    const completedToday = todayJobs.filter(j => j.status === 'complete')
-    const paidToday     = completedToday.filter(j => invMap[j.id]?.status === 'paid')
-    const pendingPayment = invoices?.filter(i => i.status === 'sent') || []
+    const todayJobs       = jobs.filter(j => isToday(j.created_at))
+    const openJobs        = jobs.filter(j => j.status === 'open')
+    const completedToday  = todayJobs.filter(j => j.status === 'complete')
+    const paidToday       = completedToday.filter(j => invMap[j.id]?.status === 'paid')
+    const pendingInvoices = invoices
+      .filter(i => i.status === 'sent')
+      .map(i => ({ ...i, _job: jobs.find(j => j.id === i.job_id) }))
 
-    const revenueToday  = paidToday.reduce((s, j) => s + Number(invMap[j.id]?.total_amount || 0), 0)
-    const revenuePending = pendingPayment.reduce((s, i) => s + Number(i.total_amount || 0), 0)
+    const revenueToday    = paidToday.reduce((s, j) => s + Number(invMap[j.id]?.total_amount || 0), 0)
+    const revenuePending  = pendingInvoices.reduce((s, i) => s + Number(i.total_amount || 0), 0)
 
-    const svcBreakdown = {}
-    completedToday.forEach(j => {
-      j.job_services?.forEach(s => {
-        svcBreakdown[s.service_name] = (svcBreakdown[s.service_name] || 0) + 1
-      })
-    })
-
-    const partsUsed = {}
-    completedToday.forEach(j => {
-      j.job_parts?.forEach(p => {
-        if (!partsUsed[p.part_name]) partsUsed[p.part_name] = { qty: 0, total: 0 }
-        partsUsed[p.part_name].qty   += p.quantity
-        partsUsed[p.part_name].total += Number(p.part_cost) * p.quantity
-      })
-    })
+    const avgTicket = paidToday.length > 0
+      ? revenueToday / paidToday.length
+      : 0
 
     const mechPerf = {}
-    mechanics?.forEach(m => { mechPerf[m.id] = { name: m.name, jobs: 0, revenue: 0 } })
+    mechanics.forEach(m => { mechPerf[m.id] = { name: m.name, jobs: 0, revenue: 0, activeJob: null } })
     completedToday.forEach(j => {
       if (j.mechanic_id && mechPerf[j.mechanic_id]) {
         mechPerf[j.mechanic_id].jobs++
@@ -183,19 +729,14 @@ export default function ManagerDashboard() {
       }
     })
 
+    const chartData = buildChartData(invoices)
+
     setData({
-      jobs: jobs || [],
+      todayJobs, openJobs, completedToday, paidToday,
+      pendingInvoices, revenueToday, revenuePending, avgTicket,
       invoices: invMap,
-      todayJobs,
-      openJobs,
-      completedToday,
-      paidToday,
-      pendingPayment,
-      revenueToday,
-      revenuePending,
-      svcBreakdown,
-      partsUsed,
-      mechPerf: Object.values(mechPerf),
+      mechPerf: Object.values(mechPerf).sort((a, b) => b.jobs - a.jobs || b.revenue - a.revenue),
+      chartData,
     })
     setLastUpdated(new Date())
     setLoading(false)
@@ -203,311 +744,95 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchData()
-    const channel = supabase
-      .channel('manager-realtime')
+    const ch = supabase.channel('manager-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'job_services' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_parts' }, fetchData)
       .subscribe()
-    return () => supabase.removeChannel(channel)
+    return () => supabase.removeChannel(ch)
   }, [fetchData])
 
-  if (loading || !data) return (
-    <div className="flex items-center justify-center h-96">
-      <div className="flex items-center gap-2.5 text-slate-600">
-        <RefreshCw className="w-4 h-4 animate-spin" />
-        <span className="text-[13px]">Loading dashboard…</span>
+  if (loading || !data) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, color: 'var(--text-muted)' }}>
+        <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+        <span style={{ fontSize: 13 }}>Loading dashboard…</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
-    </div>
-  )
+    )
+  }
 
-  const topSvcCount = Math.max(...Object.values(data.svcBreakdown), 1)
+  const firstName = user?.name?.split(' ')[0] || 'there'
+  const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+
+  const kpis = [
+    { label: 'Active jobs',     value: String(data.openJobs.length) },
+    { label: 'Jobs done',       value: String(data.completedToday.length) },
+    {
+      label: 'Avg. ticket',
+      value: data.avgTicket > 0
+        ? 'AED ' + data.avgTicket.toLocaleString('en-AE', { maximumFractionDigits: 0 })
+        : '—',
+    },
+    {
+      label: 'Pending',
+      value: data.pendingInvoices.length > 0
+        ? formatAED(data.revenuePending)
+        : 'Clear ✓',
+    },
+  ]
 
   return (
-    <div className="p-5 sm:p-7 max-w-[1100px] mx-auto">
-
-      {/* ── Header ─────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-8 gap-4 animate-fade-up">
+    <>
+      {/* ── Page header ─────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
-          <p className="text-[10.5px] font-semibold text-slate-700 uppercase tracking-[0.09em] mb-1.5">
-            {new Date().toLocaleDateString('en-AE', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-          <h1 className="text-[22px] font-bold text-white leading-none tracking-tight">
-            {getGreeting()}, {user?.name?.split(' ')[0]}
+          <div style={{ fontSize: 11.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>
+            {dateLabel}
+          </div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', margin: '6px 0 0', color: 'var(--text)' }}>
+            {getGreeting()}, {firstName}.{' '}
+            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+              {data.openJobs.length > 0
+                ? `${data.openJobs.length} job${data.openJobs.length !== 1 ? 's' : ''} active.`
+                : 'All clear.'}
+            </span>
           </h1>
-          <p className="text-[13px] text-slate-600 mt-1.5">
-            Here's what's happening at the garage today.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
-          {/* Live badge */}
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2.5 py-1.5 rounded-lg">
-            <span className="relative flex w-1.5 h-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
-              <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-emerald-400" />
-            </span>
-            Live
-          </div>
-
-          {/* Last updated */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="live-badge">
+            <span className="live-dot" />
+            Live · syncing
+          </span>
           {lastUpdated && (
-            <span className="hidden sm:block text-[11px] text-slate-700 tabular-nums">
-              {lastUpdated.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+              {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
-
-          {/* Refresh */}
-          <button
-            onClick={fetchData}
-            className="p-2 rounded-xl bg-surface-700 border border-white/[0.06] text-slate-600 hover:text-white hover:bg-surface-600 transition-all duration-150"
-            title="Refresh"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
+          <button className="chip" onClick={fetchData}>
+            <RefreshCw size={12} /> Refresh
+          </button>
+          <button className="chip is-active">
+            <Plus size={12} /> New job
           </button>
         </div>
       </div>
 
-      {/* ── Stat cards ─────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatCard
-          label="Jobs Done Today"
-          value={data.completedToday.length}
-          sub={`${data.todayJobs.length} total today`}
-          icon={CheckCircle2}
-          color="emerald"
-          index={0}
-        />
-        <StatCard
-          label="Revenue Today"
-          value={formatAED(data.revenueToday)}
-          sub="From paid invoices"
-          icon={TrendingUp}
-          color="gold"
-          index={1}
-        />
-        <StatCard
-          label="Active Jobs"
-          value={data.openJobs.length}
-          sub="In progress now"
-          icon={Clock}
-          color="blue"
-          index={2}
-        />
-        <StatCard
-          label="Pending Payment"
-          value={data.pendingPayment.length}
-          sub={data.pendingPayment.length > 0
-            ? `${formatAED(data.revenuePending)} outstanding`
-            : 'All clear'}
-          icon={AlertCircle}
-          color="amber"
-          index={3}
-        />
+      {/* ── Top grid: hero + bays ────────────────────────── */}
+      <div className="top-grid">
+        <HeroRevenue revenueToday={data.revenueToday} kpis={kpis} />
+        <ActiveBays openJobs={data.openJobs} totalBays={3} />
       </div>
 
-      {/* ── Content grid ───────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* ── Revenue chart ────────────────────────────────── */}
+      <PerformanceChart chartData={data.chartData} />
 
-        {/* Left column — timelines */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* Active now */}
-          {data.openJobs.length > 0 && (
-            <Panel className="animate-fade-up stagger-5">
-              <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-blue-500/15 bg-blue-500/[0.04]">
-                <span className="relative flex w-2 h-2 flex-shrink-0">
-                  <span className="animate-ping-slow absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-50" />
-                  <span className="relative inline-flex rounded-full w-2 h-2 bg-blue-400" />
-                </span>
-                <span className="text-[10.5px] font-semibold text-blue-400 uppercase tracking-[0.08em]">
-                  Active Now
-                </span>
-                <span className="ml-auto text-[11px] font-semibold text-blue-500/70">
-                  {data.openJobs.length} job{data.openJobs.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="divide-y divide-white/[0.03]">
-                {data.openJobs.map(job => (
-                  <div key={job.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors duration-100">
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-mono text-[10.5px] font-bold text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-md">
-                          {job.job_number}
-                        </span>
-                        <span className="text-[12.5px] font-medium text-slate-200">{job.customers?.name}</span>
-                      </div>
-                      <p className="text-[11.5px] text-slate-600">
-                        {job.vehicles?.make} {job.vehicles?.model}
-                        <span className="text-slate-700 mx-1.5">·</span>
-                        {job.mechanics?.name}
-                      </p>
-                    </div>
-                    <LiveElapsedCell createdAt={job.created_at} />
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          )}
-
-          {/* Job timeline */}
-          <Panel className="animate-fade-up stagger-6">
-            <PanelHeader icon={Activity} title="Job Timeline" meta="Today" />
-
-            {data.todayJobs.length === 0 ? (
-              <Empty>No jobs today yet</Empty>
-            ) : (
-              <div className="divide-y divide-white/[0.03]">
-                {data.todayJobs.map(job => {
-                  const inv = data.invoices[job.id]
-                  const isOpen = job.status === 'open'
-                  return (
-                    <div key={job.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors duration-100">
-
-                      {/* Status dot */}
-                      <div className="flex-shrink-0 mt-0.5">
-                        <span className={`block w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-blue-400 animate-pulse-soft' : 'bg-emerald-500'}`} />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                          <span className="font-mono text-[10.5px] font-bold text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-md">
-                            {job.job_number}
-                          </span>
-                          <span className={`text-[10.5px] px-2 py-0.5 rounded-lg border font-medium ${statusColor(job.status)}`}>
-                            {isOpen ? 'In Progress' : 'Complete'}
-                          </span>
-                          {inv && (
-                            <span className={`text-[10.5px] px-2 py-0.5 rounded-lg border font-medium ${statusColor(inv.status)}`}>
-                              {inv.status === 'paid' ? 'Paid' : 'Pending'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 text-[11.5px] text-slate-600 flex-wrap">
-                          <span className="text-slate-400 font-medium">{job.customers?.name}</span>
-                          <span className="text-slate-700 mx-0.5">·</span>
-                          <span>{job.vehicles?.make} {job.vehicles?.model}</span>
-                          <span className="text-slate-700 mx-0.5">·</span>
-                          <span>{job.mechanics?.name}</span>
-                        </div>
-                      </div>
-
-                      {/* Value */}
-                      <div className="text-right flex-shrink-0">
-                        {inv ? (
-                          <p className="text-[13px] font-bold text-amber-400 tabular-nums">{formatAED(inv.total_amount)}</p>
-                        ) : (
-                          <p className="font-mono text-[11px] text-slate-700">{formatTime(job.created_at)}</p>
-                        )}
-                        {job.elapsed_time_seconds != null && !isOpen && (
-                          <p className="text-[11px] text-slate-700 tabular-nums">{formatElapsed(job.elapsed_time_seconds)}</p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </Panel>
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-4">
-
-          {/* Services today */}
-          <Panel className="animate-fade-up stagger-5">
-            <PanelHeader icon={Wrench} title="Services Today" />
-            <div className="p-5 space-y-3">
-              {Object.keys(data.svcBreakdown).length === 0 ? (
-                <Empty>No services logged today</Empty>
-              ) : (
-                Object.entries(data.svcBreakdown)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([name, count]) => (
-                    <div key={name} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[12.5px] text-slate-300 truncate flex-1 mr-3">{name}</span>
-                        <span className="text-[12px] font-bold text-brand-400 tabular-nums flex-shrink-0">{count}×</span>
-                      </div>
-                      <div className="h-[3px] bg-white/[0.04] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-brand-600 to-brand-400 rounded-full transition-all duration-700"
-                          style={{ width: `${(count / topSvcCount) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-          </Panel>
-
-          {/* Parts used */}
-          <Panel className="animate-fade-up stagger-5" style={{ animationDelay: '70ms' }}>
-            <PanelHeader icon={Package} title="Parts Used Today" />
-            <div className="p-5 space-y-3">
-              {Object.keys(data.partsUsed).length === 0 ? (
-                <Empty>No parts logged today</Empty>
-              ) : (
-                Object.entries(data.partsUsed)
-                  .sort((a, b) => b[1].total - a[1].total)
-                  .map(([name, info]) => (
-                    <div key={name}>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-[12px] text-slate-300 truncate flex-1">{name}</span>
-                        <span className="text-[12px] font-bold text-amber-400 tabular-nums flex-shrink-0">
-                          {formatAED(info.total)}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-700 mt-0.5">
-                        {info.qty} unit{info.qty !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))
-              )}
-            </div>
-          </Panel>
-
-          {/* Mechanics */}
-          <Panel className="animate-fade-up stagger-5" style={{ animationDelay: '140ms' }}>
-            <PanelHeader icon={Users} title="Mechanics" />
-            <div className="p-5 space-y-3">
-              {data.mechPerf
-                .sort((a, b) => b.jobs - a.jobs || b.revenue - a.revenue)
-                .map(m => {
-                  const initials = m.name.split(' ').map(n => n[0]).join('').slice(0, 2)
-                  return (
-                    <div key={m.name} className="flex items-center gap-3">
-                      {/* Avatar */}
-                      <div className={`relative flex-shrink-0 ${m.activeJob ? 'ring-1 ring-blue-500/40 ring-offset-1 ring-offset-[#141c2e] rounded-full' : ''}`}>
-                        <div className="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-400 text-[10.5px] font-bold">
-                          {initials}
-                        </div>
-                        {m.activeJob && (
-                          <span className="absolute -bottom-px -right-px w-2 h-2 rounded-full bg-blue-400 border border-[#141c2e]" />
-                        )}
-                      </div>
-
-                      {/* Name + stats */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] font-semibold text-white truncate leading-none">{m.name}</p>
-                        <p className="text-[11px] text-slate-600 mt-[3px]">
-                          {m.jobs} job{m.jobs !== 1 ? 's' : ''}
-                          <span className="text-slate-700 mx-1">·</span>
-                          <span className="text-amber-500/80">{formatAED(m.revenue)}</span>
-                          {m.activeJob && (
-                            <span className="text-blue-400/80"> · {m.activeJob}</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </Panel>
-        </div>
+      {/* ── Bottom grid: jobs table + pending ───────────── */}
+      <div className="bottom-grid">
+        <JobsTable todayJobs={data.todayJobs} invoices={data.invoices} />
+        <PendingPanel pendingInvoices={data.pendingInvoices} mechPerf={data.mechPerf} />
       </div>
-    </div>
+    </>
   )
 }

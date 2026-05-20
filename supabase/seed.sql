@@ -225,7 +225,7 @@ insert into invoices (invoice_number, job_id, customer_phone, customer_email, se
 insert into quotations (id, quote_number, customer_name, customer_phone, vehicle_info,
   status, valid_days, valid_until, subtotal, vat_amount, total_amount, created_by, notes)
 values
-  ('q1000000-0000-0000-0000-000000000001',
+  ('10000000-0000-0000-0000-000000000001',
    'QUO-0001',
    'Ahmed Al-Rashid', '+971501234567',
    '2021 Toyota Camry – DXB-A-12345',
@@ -235,7 +235,7 @@ values
    'Mariam Al-Zaabi',
    'Customer approved via phone. Job to be booked Monday.'),
 
-  ('q1000000-0000-0000-0000-000000000002',
+  ('10000000-0000-0000-0000-000000000002',
    'QUO-0002',
    'Khalid Ibrahim', '+971563456789',
    '2022 Nissan Patrol – DXB-C-34567',
@@ -245,7 +245,7 @@ values
    'Mariam Al-Zaabi',
    'Full suspension overhaul estimate. Awaiting customer confirmation.'),
 
-  ('q1000000-0000-0000-0000-000000000003',
+  ('10000000-0000-0000-0000-000000000003',
    'QUO-0003',
    'Fatima Hassan', '+971584567890',
    '2023 Toyota Land Cruiser – DXB-D-45678',
@@ -261,21 +261,21 @@ values
 insert into quotation_items (quotation_id, item_type, item_name, unit_cost, quantity)
 values
   -- QUO-0001: Full Service Package + Oil + Oil Filter
-  ('q1000000-0000-0000-0000-000000000001', 'service', 'Full Service Package',   750.00, 1),
-  ('q1000000-0000-0000-0000-000000000001', 'part',    'Engine Oil 5W-30 (5L)',   85.00, 1),
-  ('q1000000-0000-0000-0000-000000000001', 'part',    'Oil Filter',              35.00, 1),
+  ('10000000-0000-0000-0000-000000000001', 'service', 'Full Service Package',   750.00, 1),
+  ('10000000-0000-0000-0000-000000000001', 'part',    'Engine Oil 5W-30 (5L)',   85.00, 1),
+  ('10000000-0000-0000-0000-000000000001', 'part',    'Oil Filter',              35.00, 1),
 
   -- QUO-0002: Suspension + Transmission + Wheel Alignment + parts
-  ('q1000000-0000-0000-0000-000000000002', 'service', 'Suspension Inspection',  150.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'service', 'Wheel Alignment',        100.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'service', 'Transmission Service',   500.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'part',    'Serpentine Belt',         95.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'part',    'Timing Belt',            250.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'part',    'Thermostat',              85.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'part',    'Water Pump',             220.00, 1),
-  ('q1000000-0000-0000-0000-000000000002', 'part',    'Brake Fluid DOT4',        20.00, 2),
+  ('10000000-0000-0000-0000-000000000002', 'service', 'Suspension Inspection',  150.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'service', 'Wheel Alignment',        100.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'service', 'Transmission Service',   500.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'part',    'Serpentine Belt',         95.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'part',    'Timing Belt',            250.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'part',    'Thermostat',              85.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'part',    'Water Pump',             220.00, 1),
+  ('10000000-0000-0000-0000-000000000002', 'part',    'Brake Fluid DOT4',        20.00, 2),
 
   -- QUO-0003: Engine Diagnostic + Air Filter + Fuel Filter
-  ('q1000000-0000-0000-0000-000000000003', 'service', 'Engine Diagnostic Scan', 200.00, 1),
-  ('q1000000-0000-0000-0000-000000000003', 'part',    'Air Filter',              60.00, 1),
-  ('q1000000-0000-0000-0000-000000000003', 'part',    'Fuel Filter',             45.00, 1);
+  ('10000000-0000-0000-0000-000000000003', 'service', 'Engine Diagnostic Scan', 200.00, 1),
+  ('10000000-0000-0000-0000-000000000003', 'part',    'Air Filter',              60.00, 1),
+  ('10000000-0000-0000-0000-000000000003', 'part',    'Fuel Filter',             45.00, 1);

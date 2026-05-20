@@ -1,243 +1,280 @@
-import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
-  LogOut, Activity, Menu, X, ChevronRight,
-  Package, ClipboardList
+  LogOut, Activity, Package, ClipboardList,
+  Bell, Search, Settings, Sun, Moon, ChevronDown,
+  Mic, MessageCircle, HelpCircle, Menu, X, Users,
+  CalendarDays, Boxes, BarChart3
 } from 'lucide-react'
 
-function SectionLabel({ children }) {
-  return (
-    <div className="flex items-center gap-2 px-3 mb-1 mt-5 first:mt-1">
-      <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-[0.09em]">{children}</span>
-      <div className="flex-1 h-px bg-white/[0.04]" />
-    </div>
-  )
-}
+/* ── Nav configuration ───────────────────────────────── */
+const MANAGER_NAV_MAIN = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, to: '/manager', end: true },
+  { id: 'jobs',      label: 'Jobs',      icon: Activity,        to: '/manager/jobs' },
+  { id: 'inventory', label: 'Inventory', icon: Boxes,           to: '/manager/inventory' },
+  { id: 'quotes',    label: 'Quotations',icon: ClipboardList,   to: '/manager/quotes' },
+]
+const MANAGER_NAV_SUPPORT = [
+  { id: 'messages', label: 'Messages',     icon: MessageCircle },
+  { id: 'help',     label: 'Help & Support', icon: HelpCircle },
+]
 
-function NavItem({ to, icon: Icon, label, end, onClick }) {
+const RECEPTIONIST_NAV_MAIN = [
+  { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard, to: '/receptionist', end: true },
+  { id: 'new-job',   label: 'New Job',    icon: PlusCircle,      to: '/receptionist/new-job' },
+  { id: 'quotes',    label: 'Quotations', icon: ClipboardList,   to: '/receptionist/quotes' },
+  { id: 'invoices',  label: 'Invoices',   icon: FileText,        to: '/receptionist/invoices' },
+]
+const RECEPTIONIST_NAV_SUPPORT = [
+  { id: 'messages', label: 'Messages',      icon: MessageCircle },
+  { id: 'help',     label: 'Help & Support', icon: HelpCircle },
+]
+
+/* ── Sidebar nav item ─────────────────────────────────── */
+function NavItem({ item, onClick }) {
+  const Icon = item.icon
+  if (!item.to) {
+    return (
+      <button className="nav-item" onClick={onClick}>
+        <Icon className="nav-icon" size={18} strokeWidth={1.8} />
+        <span>{item.label}</span>
+        {item.badge != null && <span className="nav-badge">{item.badge}</span>}
+      </button>
+    )
+  }
   return (
     <NavLink
-      to={to}
-      end={end}
+      to={item.to}
+      end={item.end}
       onClick={onClick}
-      className={({ isActive }) =>
-        `relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium
-         transition-colors duration-150 group
-         ${isActive
-           ? 'bg-brand-500/10 text-brand-400'
-           : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.04]'
-         }`
-      }
+      className={({ isActive }) => 'nav-item' + (isActive ? ' is-active' : '')}
     >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-[18px] bg-brand-500 rounded-r-full" />
-          )}
-          <Icon
-            className={`w-4 h-4 flex-shrink-0 transition-colors duration-150
-              ${isActive ? 'text-brand-400' : 'text-slate-600 group-hover:text-slate-400'}`}
-            strokeWidth={isActive ? 2.5 : 2}
-          />
-          <span className="flex-1">{label}</span>
-          {isActive && <ChevronRight className="w-3 h-3 text-brand-500/50" />}
-        </>
-      )}
+      <Icon className="nav-icon" size={18} strokeWidth={1.8} />
+      <span>{item.label}</span>
+      {item.badge != null && <span className="nav-badge">{item.badge}</span>}
     </NavLink>
   )
 }
 
-function BottomNavItem({ to, icon: Icon, label, end }) {
+/* ── Sidebar content ─────────────────────────────────── */
+function SidebarContent({ user, onNavClick, onLogout }) {
+  const isReceptionist = user?.role === 'receptionist'
+  const navMain    = isReceptionist ? RECEPTIONIST_NAV_MAIN    : MANAGER_NAV_MAIN
+  const navSupport = isReceptionist ? RECEPTIONIST_NAV_SUPPORT : MANAGER_NAV_SUPPORT
+  const firstName  = user?.name?.split(' ')[0] || 'there'
+  const initials   = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??'
+  const dayName    = new Date().toLocaleDateString('en-US', { weekday: 'long' })
+  const dateFmt    = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+
   return (
-    <NavLink
-      to={to}
-      end={end}
-      className={({ isActive }) =>
-        `flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-[11px] font-medium
-         transition-all duration-150 flex-1
-         ${isActive ? 'text-brand-400' : 'text-slate-600'}`
-      }
-    >
-      {({ isActive }) => (
-        <>
-          <Icon
-            className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
-            strokeWidth={isActive ? 2.5 : 2}
-          />
-          <span>{label}</span>
-        </>
-      )}
-    </NavLink>
+    <>
+      {/* Brand */}
+      <div className="brand">
+        <div className="brand-mark">
+          <Wrench size={16} color="white" strokeWidth={2.2} />
+        </div>
+        <span>Pit<span className="brand-vest">stop</span></span>
+      </div>
+
+      {/* Welcome */}
+      <div className="welcome">
+        <div className="welcome-hi">Welcome, <strong>{firstName}</strong></div>
+        <div className="welcome-sub">
+          {dayName} at the garage —<br />
+          {isReceptionist ? 'Front desk' : 'Manager view'} · {dateFmt}
+        </div>
+      </div>
+
+      {/* Main nav */}
+      <div className="nav-section">
+        <div className="nav-section-title">Main Menu</div>
+        {navMain.map(item => (
+          <NavItem key={item.id} item={item} onClick={onNavClick} />
+        ))}
+      </div>
+
+      {/* Support nav */}
+      <div className="nav-section">
+        <div className="nav-section-title">Support</div>
+        {navSupport.map(item => (
+          <NavItem key={item.id} item={item} onClick={onNavClick} />
+        ))}
+      </div>
+
+      {/* User chip at bottom */}
+      <div className="side-foot">
+        <div className="avatar sm">{initials}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="profile-name" style={{ fontSize: 12 }}>{user?.name}</div>
+          <div className="profile-role" style={{ textTransform: 'capitalize' }}>{user?.role}</div>
+        </div>
+        <button
+          onClick={onLogout}
+          title="Logout"
+          style={{
+            background: 'transparent', border: 0, padding: '6px 8px', borderRadius: 8,
+            color: 'var(--text-dim)', cursor: 'pointer', transition: 'all 160ms ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(248,113,113,0.10)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'transparent'; }}
+        >
+          <LogOut size={14} />
+        </button>
+      </div>
+    </>
   )
 }
 
-function SidebarContent({ onNavClick }) {
+/* ── Top bar ─────────────────────────────────────────── */
+const TOP_TABS = ['Workshop', 'Customers', 'Tools']
+
+function TopBar({ theme, toggleTheme, onMenuOpen }) {
+  const location = useLocation()
+  const activeTab = location.pathname.includes('customer') ? 'Customers'
+    : location.pathname.includes('inventor') || location.pathname.includes('tools') ? 'Tools'
+    : 'Workshop'
+
+  return (
+    <header className="topbar">
+      {/* Mobile hamburger */}
+      <button
+        className="icon-btn"
+        style={{ display: 'none' }}
+        onClick={onMenuOpen}
+        aria-label="Open menu"
+        id="mobile-menu-btn"
+      >
+        <Menu size={16} />
+      </button>
+
+      {/* Pill tabs */}
+      <div className="pill-group">
+        {TOP_TABS.map(tab => (
+          <button
+            key={tab}
+            className={'pill' + (activeTab === tab ? ' is-active' : '')}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="searchbar">
+        <Mic size={16} />
+        <input placeholder="Search jobs, vehicles, customers…" />
+        <kbd>⌘K</kbd>
+      </div>
+
+      {/* Right actions */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
+        <button
+          className="icon-btn"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+        <button className="icon-btn" title="Notifications">
+          <Bell size={16} />
+          <span className="dot" />
+        </button>
+        <button className="icon-btn" title="Settings">
+          <Settings size={16} />
+        </button>
+      </div>
+    </header>
+  )
+}
+
+/* ── Layout shell ─────────────────────────────────────── */
+export default function Layout({ children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const isReceptionist = user?.role === 'receptionist'
-  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)
+  const [theme, setTheme] = useState(() => localStorage.getItem('pitstop-theme') || 'dark')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-accent', 'indigo')
+    document.documentElement.setAttribute('data-density', 'comfortable')
+    localStorage.setItem('pitstop-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
-  return (
-    <>
-      {/* Brand */}
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-600/25 flex-shrink-0">
-            <Wrench className="w-[15px] h-[15px] text-white" strokeWidth={2.5} />
-          </div>
-          <div>
-            <p className="text-[13px] font-bold text-white leading-none tracking-tight">Garage ERP</p>
-            <p className="text-[11px] text-slate-600 mt-0.5">Dubai Auto Services</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-4 h-px bg-white/[0.05]" />
-
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-3 overflow-y-auto scrollbar-none">
-        {isReceptionist ? (
-          <>
-            <SectionLabel>Jobs</SectionLabel>
-            <NavItem to="/receptionist" end icon={LayoutDashboard} label="Dashboard" onClick={onNavClick} />
-            <NavItem to="/receptionist/new-job" icon={PlusCircle} label="New Job" onClick={onNavClick} />
-            <NavItem to="/receptionist/invoices" icon={FileText} label="Invoices" onClick={onNavClick} />
-            <SectionLabel>Quotes</SectionLabel>
-            <NavItem to="/receptionist/quotes" icon={ClipboardList} label="Quotations" onClick={onNavClick} />
-          </>
-        ) : (
-          <>
-            <SectionLabel>Analytics</SectionLabel>
-            <NavItem to="/manager" end icon={LayoutDashboard} label="Dashboard" onClick={onNavClick} />
-            <NavItem to="/manager/jobs" icon={Activity} label="All Jobs" onClick={onNavClick} />
-            <SectionLabel>Operations</SectionLabel>
-            <NavItem to="/manager/inventory" icon={Package} label="Inventory" onClick={onNavClick} />
-            <NavItem to="/manager/quotes" icon={ClipboardList} label="Quotations" onClick={onNavClick} />
-          </>
-        )}
-      </nav>
-
-      {/* User profile */}
-      <div className="mx-4 h-px bg-white/[0.05]" />
-      <div className="p-3">
-        <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-white/[0.04] transition-colors duration-150">
-          <div className="relative flex-shrink-0">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[10px] font-bold shadow-md shadow-brand-600/20">
-              {initials}
-            </div>
-            <span className="absolute -bottom-px -right-px w-2 h-2 bg-emerald-500 border border-surface-800 rounded-full" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-slate-200 truncate leading-none">{user?.name}</p>
-            <p className="text-[10px] text-slate-600 capitalize mt-[3px]">{user?.role}</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="text-slate-700 hover:text-red-400 hover:bg-red-400/10 transition-all duration-150 p-1.5 rounded-lg"
-            title="Logout"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-    </>
-  )
-}
-
-export default function Layout({ children }) {
-  const { user } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  const isReceptionist = user?.role === 'receptionist'
-  const navItems = isReceptionist ? [
-    { to: '/receptionist', end: true, icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/receptionist/new-job', icon: PlusCircle, label: 'New Job' },
-    { to: '/receptionist/quotes', icon: ClipboardList, label: 'Quotes' },
-    { to: '/receptionist/invoices', icon: FileText, label: 'Invoices' },
-  ] : [
-    { to: '/manager', end: true, icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/manager/jobs', icon: Activity, label: 'All Jobs' },
-    { to: '/manager/inventory', icon: Package, label: 'Inventory' },
-    { to: '/manager/quotes', icon: ClipboardList, label: 'Quotes' },
-  ]
+  const sidebarProps = { user, onNavClick: () => setDrawerOpen(false), onLogout: handleLogout }
 
   return (
-    <div className="flex min-h-screen bg-surface-900">
+    <div className="app">
 
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-[220px] flex-shrink-0 flex-col bg-surface-800 border-r border-white/[0.05] shadow-sidebar">
-        <SidebarContent />
+      {/* ── Desktop sidebar ─────────────────────────────── */}
+      <aside className="sidebar sidebar-desktop">
+        <SidebarContent {...sidebarProps} />
       </aside>
 
-      {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-surface-800/95 backdrop-blur-xl border-b border-white/[0.05]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-[8px] bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-md shadow-brand-600/30">
-            <Wrench className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
-          <p className="text-[13px] font-bold text-white tracking-tight">Garage ERP</p>
-        </div>
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors duration-150"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Mobile overlay */}
-      {sidebarOpen && (
+      {/* ── Mobile overlay ──────────────────────────────── */}
+      {drawerOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-fade-in"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setDrawerOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 49,
+            background: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(4px)',
+            animation: 'fadeIn 0.2s ease both',
+          }}
         />
       )}
 
-      {/* Mobile drawer */}
-      <div className={`
-        md:hidden fixed top-0 left-0 bottom-0 z-50 w-[260px]
-        bg-surface-800 border-r border-white/[0.05] flex flex-col
-        transition-transform duration-300 ease-spring
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex items-center justify-between px-4 py-4 border-b border-white/[0.05]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-600/30">
-              <Wrench className="w-4 h-4 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <p className="text-[13px] font-bold text-white leading-none tracking-tight">Garage ERP</p>
-              <p className="text-[11px] text-slate-600 mt-0.5">Dubai Auto Services</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="text-slate-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.06]"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <SidebarContent onNavClick={() => setSidebarOpen(false)} />
+      {/* ── Mobile drawer ───────────────────────────────── */}
+      <aside
+        style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50,
+          width: 260,
+          transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 280ms cubic-bezier(0.16,1,0.3,1)',
+          display: 'flex', flexDirection: 'column',
+        }}
+        className="sidebar"
+      >
+        <button
+          onClick={() => setDrawerOpen(false)}
+          style={{
+            position: 'absolute', top: 16, right: 16, zIndex: 1,
+            background: 'var(--pill-bg)', border: '1px solid var(--border)',
+            borderRadius: 999, width: 32, height: 32,
+            display: 'grid', placeItems: 'center', color: 'var(--text-muted)',
+            cursor: 'pointer',
+          }}
+        >
+          <X size={14} />
+        </button>
+        <SidebarContent {...sidebarProps} />
+      </aside>
+
+      {/* ── Main shell ──────────────────────────────────── */}
+      <div className="shell">
+        <TopBar theme={theme} toggleTheme={toggleTheme} onMenuOpen={() => setDrawerOpen(true)} />
+        <main className="page">
+          {children}
+        </main>
       </div>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto md:pt-0 pt-14 pb-16 md:pb-0">
-        {children}
-      </main>
-
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center bg-surface-800/95 backdrop-blur-xl border-t border-white/[0.05] px-2 py-1.5 safe-area-inset-bottom">
-        {navItems.map(item => (
-          <BottomNavItem key={item.to} {...item} />
-        ))}
-      </nav>
+      {/* ── Mobile show-menu button (injected via CSS) ─── */}
+      <style>{`
+        @media (max-width: 880px) {
+          #mobile-menu-btn { display: grid !important; }
+          .pill-group { display: none !important; }
+          .searchbar { margin-left: 0 !important; }
+        }
+      `}</style>
     </div>
   )
 }
