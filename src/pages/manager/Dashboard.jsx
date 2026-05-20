@@ -3,8 +3,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { formatAED, formatElapsed, formatTime, isToday } from '../../lib/utils'
 import {
-  RefreshCw, Plus, ArrowUp, ArrowDown, ArrowUpRight,
-  ChevronDown, Clock, Wrench
+  RefreshCw, Plus, ArrowUpRight,
+  Clock, Wrench
 } from 'lucide-react'
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -237,43 +237,55 @@ function PerformanceChart({ chartData }) {
   )
 }
 
-/* ── Hero revenue card ───────────────────────────────── */
-function HeroRevenue({ revenueToday, kpis }) {
+/* ── KPI strip — replaces the banned hero-metric template ── */
+function KpiStrip({ revenueToday, openJobs, completedToday, avgTicket, pendingInvoices, revenuePending }) {
   const { whole, cents } = fmtRevenue(revenueToday)
+
+  const items = [
+    {
+      label: 'Revenue today',
+      value: revenueToday > 0 ? `AED ${whole}.${cents}` : 'AED 0.00',
+      mono: true,
+    },
+    {
+      label: 'Active jobs',
+      value: String(openJobs),
+      cls: openJobs > 0 ? '' : 'muted',
+    },
+    {
+      label: 'Completed',
+      value: String(completedToday),
+      cls: completedToday > 0 ? 'ok' : 'muted',
+    },
+    {
+      label: 'Avg. ticket',
+      value: avgTicket > 0
+        ? 'AED ' + avgTicket.toLocaleString('en-AE', { maximumFractionDigits: 0 })
+        : '—',
+      mono: avgTicket > 0,
+    },
+    {
+      label: 'Pending payment',
+      value: pendingInvoices > 0 ? formatAED(revenuePending) : 'Clear',
+      cls: pendingInvoices > 0 ? 'warn' : 'ok',
+      mono: pendingInvoices > 0,
+    },
+  ]
+
   return (
-    <section className="hero">
-      <div className="hero-deco" />
-      <div className="hero-head">
-        <div className="hero-label">Today's Revenue</div>
-        <button className="chip is-active" style={{ position: 'relative', zIndex: 1 }}>
-          Today <ChevronDown size={12} />
-        </button>
-      </div>
-
-      <div className="hero-amount mono">
-        <span className="currency">AED</span>
-        <span>{whole}</span>
-        <span className="cents">.{cents}</span>
-      </div>
-
-      <div className="hero-row" style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 24 }}>
-        {kpis.map(k => (
-          <div key={k.label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 10.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {k.label}
-            </span>
-            <span style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <b className="mono" style={{ fontSize: 15, color: 'var(--text)' }}>{k.value}</b>
-              {k.delta != null && (
-                <span className={'delta ' + (k.delta >= 0 ? 'up' : 'down')} style={{ fontSize: 10 }}>
-                  {k.delta >= 0 ? '↑' : '↓'}{Math.abs(k.delta)}
-                </span>
-              )}
+    <div className="kpi-strip">
+      {items.map((item, i) => (
+        <div key={item.label} style={{ display: 'contents' }}>
+          {i > 0 && <div className="kpi-div" />}
+          <div className="kpi-item">
+            <span className="kpi-label">{item.label}</span>
+            <span className={['kpi-value', item.cls || '', item.mono ? 'mono' : ''].filter(Boolean).join(' ')}>
+              {item.value}
             </span>
           </div>
-        ))}
-      </div>
-    </section>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -765,23 +777,6 @@ export default function ManagerDashboard() {
   const firstName = user?.name?.split(' ')[0] || 'there'
   const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
-  const kpis = [
-    { label: 'Active jobs',     value: String(data.openJobs.length) },
-    { label: 'Jobs done',       value: String(data.completedToday.length) },
-    {
-      label: 'Avg. ticket',
-      value: data.avgTicket > 0
-        ? 'AED ' + data.avgTicket.toLocaleString('en-AE', { maximumFractionDigits: 0 })
-        : '—',
-    },
-    {
-      label: 'Pending',
-      value: data.pendingInvoices.length > 0
-        ? formatAED(data.revenuePending)
-        : 'Clear ✓',
-    },
-  ]
-
   return (
     <>
       {/* ── Page header ─────────────────────────────────── */}
@@ -819,17 +814,28 @@ export default function ManagerDashboard() {
         </div>
       </div>
 
-      {/* ── Top grid: hero + bays ────────────────────────── */}
-      <div className="top-grid animate-fade-up stagger-2">
-        <HeroRevenue revenueToday={data.revenueToday} kpis={kpis} />
+      {/* ── KPI strip ─────────────────────────────────────── */}
+      <div className="animate-fade-up stagger-2">
+        <KpiStrip
+          revenueToday={data.revenueToday}
+          openJobs={data.openJobs.length}
+          completedToday={data.completedToday.length}
+          avgTicket={data.avgTicket}
+          pendingInvoices={data.pendingInvoices.length}
+          revenuePending={data.revenuePending}
+        />
+      </div>
+
+      {/* ── Active bays ───────────────────────────────────── */}
+      <div className="animate-fade-up stagger-3">
         <ActiveBays openJobs={data.openJobs} totalBays={3} />
       </div>
 
       {/* ── Revenue chart ────────────────────────────────── */}
-      <div className="animate-fade-up stagger-3"><PerformanceChart chartData={data.chartData} /></div>
+      <div className="animate-fade-up stagger-4"><PerformanceChart chartData={data.chartData} /></div>
 
       {/* ── Bottom grid: jobs table + pending ───────────── */}
-      <div className="bottom-grid animate-fade-up stagger-4">
+      <div className="bottom-grid animate-fade-up stagger-5">
         <JobsTable todayJobs={data.todayJobs} invoices={data.invoices} />
         <PendingPanel pendingInvoices={data.pendingInvoices} mechPerf={data.mechPerf} />
       </div>

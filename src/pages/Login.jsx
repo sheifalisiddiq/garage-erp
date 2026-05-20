@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Wrench, ChevronDown, Check, User } from 'lucide-react'
+import { Wrench, ChevronDown, Check } from 'lucide-react'
 
 const ROLES = [
   { value: 'receptionist', label: 'Receptionist' },
@@ -16,9 +16,9 @@ const DEMO_NAMES = {
 }
 
 const DEMO_DESC = {
-  receptionist: 'Receptionist — Jobs, inventory & settings',
-  manager:      'Manager — Read-only analytics',
-  admin:        'Admin — Multi-garage management',
+  receptionist: 'Front desk — Jobs, invoices, quotations',
+  manager:      'Manager view — Analytics and oversight',
+  admin:        'Admin — Multi-location management',
 }
 
 const DEMO_INITIALS = {
@@ -45,72 +45,65 @@ function RoleDropdown({ value, onChange }) {
         onClick={() => setOpen(o => !o)}
         style={{
           width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '13px 16px',
-          background: 'rgba(255,255,255,0.06)',
-          border: `1px solid ${open ? 'rgba(var(--accent-glow)/0.5)' : 'rgba(255,255,255,0.10)'}`,
-          borderRadius: 12,
-          cursor: 'pointer',
-          textAlign: 'left',
-          boxShadow: open ? '0 0 0 3px rgba(var(--accent-glow)/0.12)' : 'none',
-          transition: 'border-color 160ms ease, box-shadow 160ms ease',
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '11px 14px',
+          background: '#f9f8f6',
+          border: `1px solid ${open ? '#f59e0b' : 'rgba(30,25,15,0.16)'}`,
+          borderRadius: 10,
+          cursor: 'pointer', textAlign: 'left',
+          boxShadow: open ? '0 0 0 3px rgba(245,158,11,0.12)' : '0 1px 2px rgba(0,0,0,0.04)',
+          transition: 'border-color 140ms ease, box-shadow 140ms ease',
+          fontFamily: 'inherit',
         }}
       >
-        <User size={16} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
-        <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.85)', fontFamily: 'inherit' }}>
+        <span style={{ flex: 1, fontSize: 13.5, color: '#1a1714', fontWeight: 500 }}>
           {selected?.label}
         </span>
         <ChevronDown
-          size={15}
+          size={14}
           style={{
-            color: 'rgba(255,255,255,0.35)',
-            flexShrink: 0,
+            color: '#8a8278', flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'none',
-            transition: 'transform 160ms ease',
+            transition: 'transform 140ms ease',
           }}
         />
       </button>
 
-      {/* Always rendered — CSS opacity/transform gives exit animation */}
-      <div style={{
-        position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
-        background: '#1c1c2e',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: 12,
-        boxShadow: '0 20px 48px -12px rgba(0,0,0,0.8)',
-        overflow: 'hidden',
-        zIndex: 50,
-        opacity: open ? 1 : 0,
-        transform: open ? 'none' : 'translateY(-4px) scale(0.95)',
-        pointerEvents: open ? 'auto' : 'none',
-        visibility: open ? 'visible' : 'hidden',
-        transition: 'opacity 150ms cubic-bezier(0.23,1,0.32,1), transform 150ms cubic-bezier(0.23,1,0.32,1), visibility 0s linear ' + (open ? '0s' : '150ms'),
-      }}>
-        {ROLES.map(r => (
-          <button
-            key={r.value}
-            type="button"
-            onClick={() => { onChange(r.value); setOpen(false) }}
-            style={{
-              width: '100%', textAlign: 'left',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: 10, padding: '11px 16px',
-              background: r.value === value ? 'rgba(var(--accent-glow)/0.10)' : 'transparent',
-              border: 0, cursor: 'pointer',
-              color: r.value === value ? 'var(--accent-400)' : 'rgba(255,255,255,0.75)',
-              fontSize: 13.5, fontFamily: 'inherit',
-              transition: 'background 120ms cubic-bezier(0.23,1,0.32,1), transform 80ms cubic-bezier(0.23,1,0.32,1)',
-            }}
-            onMouseEnter={e => { if (r.value !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-            onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
-          >
-            {r.label}
-            {r.value === value && <Check size={13} style={{ flexShrink: 0, color: 'var(--accent-400)' }} />}
-          </button>
-        ))}
-      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 5px)', left: 0, right: 0,
+          background: '#ffffff',
+          border: '1px solid rgba(30,25,15,0.12)',
+          borderRadius: 10,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06)',
+          overflow: 'hidden', zIndex: 50,
+          animation: 'dropdownIn 0.14s cubic-bezier(0.16,1,0.3,1) both',
+        }}>
+          {ROLES.map(r => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => { onChange(r.value); setOpen(false) }}
+              style={{
+                width: '100%', textAlign: 'left',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 10, padding: '10px 14px',
+                background: r.value === value ? '#fffbeb' : 'transparent',
+                border: 0, cursor: 'pointer',
+                color: r.value === value ? '#b45309' : '#1a1714',
+                fontSize: 13.5, fontFamily: 'inherit',
+                fontWeight: r.value === value ? 600 : 400,
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={e => { if (r.value !== value) e.currentTarget.style.background = '#f9f8f6' }}
+              onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
+            >
+              {r.label}
+              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: '#d97706' }} />}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -124,7 +117,7 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 600))
+    await new Promise(r => setTimeout(r, 500))
     const user = login(role)
     navigate(user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/receptionist')
   }
@@ -132,182 +125,154 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0a0a12',
+      background: '#f5f4f0',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '16px',
-      position: 'relative',
-      overflow: 'hidden',
+      padding: '24px 16px',
     }}>
-      {/* Purple glow — right side, like the reference */}
-      <div style={{
-        position: 'absolute',
-        top: '-10%',
-        right: '-5%',
-        width: '55vw',
-        height: '70vh',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse at center, rgba(120,60,220,0.28) 0%, rgba(80,30,180,0.14) 40%, transparent 70%)',
-        pointerEvents: 'none',
-        filter: 'blur(40px)',
-      }} />
-      {/* Subtle bottom-left dark shadow to balance */}
-      <div style={{
-        position: 'absolute',
-        bottom: '-20%',
-        left: '-10%',
-        width: '40vw',
-        height: '50vh',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse at center, rgba(40,20,80,0.18) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        filter: 'blur(60px)',
-      }} />
+      <div style={{ width: '100%', maxWidth: 400 }}>
 
-      <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
-
-        {/* Logo above card */}
-        <div className="animate-fade-up stagger-1" style={{ textAlign: 'center', marginBottom: 28 }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 32 }}>
           <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
+            width: 30, height: 30, borderRadius: 9,
+            background: '#f59e0b',
+            display: 'grid', placeItems: 'center',
           }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, var(--accent-500), var(--accent-600))',
-              display: 'grid', placeItems: 'center',
-              boxShadow: '0 0 24px rgba(var(--accent-glow)/0.4)',
-            }}>
-              <Wrench size={18} color="white" strokeWidth={2.5} />
-            </div>
-            <span style={{
-              fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em',
-              color: '#ffffff', fontFamily: 'inherit',
-            }}>
-              Pit<span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>stop</span>
-            </span>
+            <Wrench size={16} color="white" strokeWidth={2.2} />
           </div>
+          <span style={{
+            fontSize: 20, fontWeight: 700, letterSpacing: '-0.025em',
+            color: '#1a1714',
+          }}>
+            Pit<span style={{ color: '#8a8278', fontWeight: 500 }}>stop</span>
+          </span>
         </div>
 
         {/* Card */}
-        <div className="animate-fade-up stagger-2" style={{
-          background: 'rgba(18,18,30,0.85)',
-          border: '1px solid rgba(255,255,255,0.09)',
-          borderRadius: 20,
-          padding: '36px 32px 32px',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          boxShadow: '0 32px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid rgba(30,25,15,0.10)',
+          borderRadius: 18,
+          padding: '32px 28px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.07)',
         }}>
 
-          {/* Heading */}
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ marginBottom: 24 }}>
             <h1 style={{
-              margin: 0,
-              fontSize: 32,
-              fontWeight: 700,
-              letterSpacing: '-0.03em',
-              color: '#ffffff',
-              lineHeight: 1.1,
+              margin: 0, fontSize: 24, fontWeight: 700,
+              letterSpacing: '-0.025em', color: '#1a1714', lineHeight: 1.2,
             }}>
-              Log in
+              Sign in
             </h1>
-            <p style={{
-              margin: '10px 0 0',
-              fontSize: 13.5,
-              color: 'rgba(255,255,255,0.42)',
-              lineHeight: 1.4,
-            }}>
-              Welcome back {DEMO_NAMES[role].split(' ')[0]}, please login
+            <p style={{ margin: '6px 0 0', fontSize: 13.5, color: '#8a8278', lineHeight: 1.5 }}>
+              Select a role to explore the demo
             </p>
           </div>
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-            {/* Role selector */}
             <div>
+              <label style={{
+                display: 'block', fontSize: 11, fontWeight: 600,
+                color: '#8a8278', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+              }}>
+                Role
+              </label>
               <RoleDropdown value={role} onChange={setRole} />
             </div>
 
-            {/* Demo user preview */}
+            {/* User preview */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12, padding: '11px 14px',
+              display: 'flex', alignItems: 'center', gap: 11,
+              background: '#f9f8f6',
+              border: '1px solid rgba(30,25,15,0.09)',
+              borderRadius: 10, padding: '11px 14px',
             }}>
-              <div className="avatar sm">
+              <div style={{
+                width: 34, height: 34, borderRadius: 999, flexShrink: 0,
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                display: 'grid', placeItems: 'center',
+                color: 'white', fontWeight: 700, fontSize: 12,
+              }}>
                 {DEMO_INITIALS[role]}
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: '#1a1714' }}>
                   {DEMO_NAMES[role]}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
+                <div style={{ fontSize: 11.5, color: '#8a8278', marginTop: 2 }}>
                   {DEMO_DESC[role]}
                 </div>
               </div>
             </div>
 
-            {/* Demo badge row — styled like remember/forgot row */}
+            {/* Demo notice */}
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: 12.5,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              fontSize: 12, color: '#b5aea6',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,0.4)' }}>
-                <div className="live-dot" />
-                Demo mode
-              </div>
-              <span style={{ color: 'var(--accent-400)', fontWeight: 500, cursor: 'default' }}>
-                No password required
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{
+                  width: 5, height: 5, borderRadius: 999,
+                  background: '#16a34a', flexShrink: 0, display: 'inline-block',
+                }} />
+                Demo mode active
               </span>
+              <span style={{ color: '#d97706' }}>No password required</span>
             </div>
 
-            {/* Submit button — uses btn-primary class for CSS :active press feedback */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary"
               style={{
-                width: '100%',
-                padding: '14px 20px',
-                marginTop: 6,
-                borderRadius: 12,
-                fontSize: 15,
-                fontWeight: 700,
+                width: '100%', padding: '12px 20px', marginTop: 4,
+                border: 0, borderRadius: 10,
+                background: loading ? '#fcd34d' : '#f59e0b',
+                color: 'white', fontSize: 14, fontWeight: 700,
+                fontFamily: 'inherit',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'background 140ms ease, transform 140ms ease, box-shadow 140ms ease',
                 letterSpacing: '-0.01em',
-                boxShadow: loading ? 'none' : undefined,
               }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = '#d97706'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px -6px rgba(245,158,11,0.5)'; } }}
+              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = '#f59e0b'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; } }}
             >
               {loading ? (
                 <>
                   <span style={{
-                    width: 15, height: 15,
-                    border: '2px solid rgba(255,255,255,0.3)',
+                    width: 14, height: 14,
+                    border: '2px solid rgba(255,255,255,0.35)',
                     borderTopColor: 'white',
                     borderRadius: '50%',
                     display: 'inline-block',
-                    animation: 'spin 0.7s linear infinite',
+                    animation: 'spin 0.65s linear infinite',
                   }} />
-                  Signing in...
+                  Signing in
                 </>
               ) : 'Continue'}
             </button>
+
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="animate-fade-up stagger-3" style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 22 }}>
-          Pitstop Garage ERP ·{' '}
-          <span style={{ color: 'var(--accent-400)', cursor: 'default' }}>Dubai Auto Services</span>
-        </div>
+        <p style={{ textAlign: 'center', fontSize: 12.5, color: '#b5aea6', marginTop: 20 }}>
+          Pitstop ERP · Dubai Auto Services
+        </p>
+
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes dropdownIn {
+          from { opacity: 0; transform: translateY(-5px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </div>
   )
 }

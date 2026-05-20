@@ -169,12 +169,12 @@ function TopBar({ theme, toggleTheme, onMenuOpen }) {
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [theme, setTheme] = useState(() => localStorage.getItem('pitstop-theme') || 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem('pitstop-theme') || 'light')
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    document.documentElement.setAttribute('data-accent', 'crimson')
+    document.documentElement.setAttribute('data-accent', 'amber')
     document.documentElement.setAttribute('data-density', 'comfortable')
     localStorage.setItem('pitstop-theme', theme)
   }, [theme])
