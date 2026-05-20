@@ -20,19 +20,15 @@ function LiveTimer({ createdAt }) {
 function StatCard({ label, value, icon: Icon, color }) {
   return (
     <div style={{
-      background: 'var(--hero-grad)',
+      background: 'var(--card)',
       border: '1px solid var(--border)',
       borderRadius: 22,
       padding: 20,
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Noise texture */}
-      <div style={{ position: 'absolute', inset: 0, background: 'var(--hero-noise)', opacity: 0.6, mixBlendMode: 'overlay', pointerEvents: 'none', borderRadius: 'inherit' }} />
-      {/* Bottom vignette */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(to bottom, transparent, rgba(5,7,14,0.78))', pointerEvents: 'none' }} />
       {/* Accent glow decoration */}
-      <div style={{ position: 'absolute', right: -20, bottom: -20, width: 140, height: 120, background: 'radial-gradient(closest-side, rgba(var(--accent-glow)/0.12), transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', right: -20, bottom: -20, width: 140, height: 120, background: 'radial-gradient(closest-side, rgba(var(--accent-glow)/0.10), transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{label}</p>
@@ -202,7 +198,8 @@ export default function ReceptionistDashboard() {
         </div>
         <button
           onClick={() => navigate('/receptionist/new-job')}
-          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition shadow-lg shadow-brand-600/20 flex-shrink-0"
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 font-semibold px-3 sm:px-4 py-2.5 rounded-xl transition shadow-lg shadow-brand-600/20 flex-shrink-0"
+          style={{ color: 'white' }}
         >
           <PlusCircle className="w-4 h-4" />
           <span className="hidden sm:inline">New Job</span>

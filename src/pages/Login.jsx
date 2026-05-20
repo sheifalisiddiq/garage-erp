@@ -50,11 +50,11 @@ function RoleDropdown({ value, onChange }) {
           gap: 12,
           padding: '13px 16px',
           background: 'rgba(255,255,255,0.06)',
-          border: `1px solid ${open ? 'rgba(200,240,60,0.5)' : 'rgba(255,255,255,0.10)'}`,
+          border: `1px solid ${open ? 'rgba(var(--accent-glow)/0.5)' : 'rgba(255,255,255,0.10)'}`,
           borderRadius: 12,
           cursor: 'pointer',
           textAlign: 'left',
-          boxShadow: open ? '0 0 0 3px rgba(200,240,60,0.10)' : 'none',
+          boxShadow: open ? '0 0 0 3px rgba(var(--accent-glow)/0.12)' : 'none',
           transition: 'border-color 160ms ease, box-shadow 160ms ease',
         }}
       >
@@ -93,9 +93,9 @@ function RoleDropdown({ value, onChange }) {
                 width: '100%', textAlign: 'left',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 gap: 10, padding: '11px 16px',
-                background: r.value === value ? 'rgba(200,240,60,0.10)' : 'transparent',
+                background: r.value === value ? 'rgba(var(--accent-glow)/0.10)' : 'transparent',
                 border: 0, cursor: 'pointer',
-                color: r.value === value ? '#c8f03c' : 'rgba(255,255,255,0.75)',
+                color: r.value === value ? 'var(--accent-400)' : 'rgba(255,255,255,0.75)',
                 fontSize: 13.5, fontFamily: 'inherit',
                 transition: 'background 120ms ease',
               }}
@@ -103,7 +103,7 @@ function RoleDropdown({ value, onChange }) {
               onMouseLeave={e => { if (r.value !== value) e.currentTarget.style.background = 'transparent' }}
             >
               {r.label}
-              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: '#c8f03c' }} />}
+              {r.value === value && <Check size={13} style={{ flexShrink: 0, color: 'var(--accent-400)' }} />}
             </button>
           ))}
         </div>
@@ -173,11 +173,11 @@ export default function Login() {
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, #c8f03c, #a8cc20)',
+              background: 'linear-gradient(135deg, var(--accent-500), var(--accent-600))',
               display: 'grid', placeItems: 'center',
-              boxShadow: '0 0 24px rgba(200,240,60,0.3)',
+              boxShadow: '0 0 24px rgba(var(--accent-glow)/0.4)',
             }}>
-              <Wrench size={18} color="#0a0a12" strokeWidth={2.5} />
+              <Wrench size={18} color="white" strokeWidth={2.5} />
             </div>
             <span style={{
               fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em',
@@ -259,7 +259,7 @@ export default function Login() {
                 <div className="live-dot" />
                 Demo mode
               </div>
-              <span style={{ color: '#c8f03c', fontWeight: 500, cursor: 'default' }}>
+              <span style={{ color: 'var(--accent-400)', fontWeight: 500, cursor: 'default' }}>
                 No password required
               </span>
             </div>
@@ -274,8 +274,8 @@ export default function Login() {
                 marginTop: 6,
                 border: 0,
                 borderRadius: 12,
-                background: loading ? 'rgba(200,240,60,0.55)' : '#c8f03c',
-                color: '#0a0a12',
+                background: loading ? 'rgba(var(--accent-glow)/0.55)' : 'var(--accent-500)',
+                color: 'white',
                 fontSize: 15,
                 fontWeight: 700,
                 fontFamily: 'inherit',
@@ -285,18 +285,18 @@ export default function Login() {
                 justifyContent: 'center',
                 gap: 8,
                 transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
-                boxShadow: loading ? 'none' : '0 8px 24px -8px rgba(200,240,60,0.45)',
+                boxShadow: loading ? 'none' : '0 8px 24px -8px rgba(var(--accent-glow)/0.5)',
                 letterSpacing: '-0.01em',
               }}
-              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = '#d4f54a'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = '#c8f03c'; e.currentTarget.style.transform = 'translateY(0)'; } }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = 'var(--accent-600)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+              onMouseLeave={e => { if (!loading) { e.currentTarget.style.background = 'var(--accent-500)'; e.currentTarget.style.transform = 'translateY(0)'; } }}
             >
               {loading ? (
                 <>
                   <span style={{
                     width: 15, height: 15,
-                    border: '2px solid rgba(10,10,18,0.3)',
-                    borderTopColor: '#0a0a12',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: 'white',
                     borderRadius: '50%',
                     display: 'inline-block',
                     animation: 'spin 0.7s linear infinite',
@@ -311,7 +311,7 @@ export default function Login() {
         {/* Footer */}
         <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 22 }}>
           Pitstop Garage ERP ·{' '}
-          <span style={{ color: '#c8f03c', cursor: 'default' }}>Dubai Auto Services</span>
+          <span style={{ color: 'var(--accent-400)', cursor: 'default' }}>Dubai Auto Services</span>
         </div>
       </div>
 
