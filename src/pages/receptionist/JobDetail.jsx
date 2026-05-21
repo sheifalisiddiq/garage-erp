@@ -248,6 +248,7 @@ export default function JobDetail() {
     }).select().single()
     if (error) {
       setJobServices(prev => prev.filter(s => s.id !== tempId))
+      alert('Could not save service: ' + error.message)
     } else {
       setJobServices(prev => prev.map(s => s.id === tempId ? inserted : s))
     }
@@ -281,6 +282,7 @@ export default function JobDetail() {
     }).select().single()
     if (error) {
       setJobParts(prev => prev.filter(p => p.id !== tempId))
+      alert('Could not save part: ' + error.message)
     } else {
       setJobParts(prev => prev.map(p => p.id === tempId ? inserted : p))
     }
@@ -496,6 +498,30 @@ export default function JobDetail() {
     win.onload = () => { win.print(); win.onafterprint = () => win.close() }
   }
 
+  const buildPreviewInvoice = () => ({
+    invoice_number: 'PREVIEW',
+    service_total: serviceTotal,
+    parts_total: partsTotal,
+    net_amount: netAmount,
+    tax_total: taxTotal,
+    payable_amount: payableAmount,
+    total_amount: payableAmount,
+    status: 'sent',
+    due_date: dueDate,
+    buyer_is_business: buyerIsBusiness,
+    buyer_legal_id_type: buyerLegalIdType,
+    buyer_legal_id_number: buyerLegalIdNumber,
+    buyer_street: buyerStreet,
+    buyer_city: buyerCity,
+    buyer_country: buyerCountry,
+    buyer_postal_code: buyerPostalCode,
+    is_free_trade_zone: isFreeTradeZone,
+    is_deemed_supply: isDeemedSupply,
+    is_margin_scheme: isMarginScheme,
+    is_e_commerce: isEcommerce,
+    is_export: isExport,
+  })
+
   const sendInvoiceEmail = async (inv) => {
     if (!job.customers?.email) return false
     const templateId = localStorage.getItem('pitstop_invoice_style') || 'classic'
@@ -621,24 +647,27 @@ export default function JobDetail() {
           )}
 
           {isOpen && (
-            <div className="relative">
-              <select
-                className={selectCls}
-                value={selService}
-                onChange={async (e) => {
-                  const val = e.target.value
-                  if (!val) return
-                  setSelService(val)
-                  await addService(val)
-                  setSelService('')
-                }}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <select
+                  className={selectCls}
+                  value={selService}
+                  onChange={e => setSelService(e.target.value)}
+                >
+                  <option value="">+ Select service to add...</option>
+                  {allServices.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} — {formatAED(s.cost)}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+              <button
+                onClick={() => { addService(selService); setSelService('') }}
+                disabled={!selService}
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
               >
-                <option value="">+ Select service to add...</option>
-                {allServices.map(s => (
-                  <option key={s.id} value={s.id}>{s.name} — {formatAED(s.cost)}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <PlusCircle className="w-4 h-4" /> Add Service
+              </button>
             </div>
           )}
 
@@ -720,10 +749,29 @@ export default function JobDetail() {
             <Printer className="w-3.5 h-3.5" /> Print
           </button>
         ) : null}>
+          {/* Rendered invoice template preview */}
+          {(jobServices.length + jobParts.length) > 0 && (
+            <div className="mb-4 rounded-xl overflow-hidden border border-white/[0.06]">
+              <iframe
+                srcDoc={renderInvoiceToHtml({
+                  invoice: invoice || buildPreviewInvoice(),
+                  job,
+                  jobServices,
+                  jobParts,
+                  templateId: localStorage.getItem('pitstop_invoice_style') || 'classic',
+                  logoDataUrl: localStorage.getItem('pitstop_logo') || '',
+                })}
+                className="w-full"
+                style={{ height: '520px' }}
+                title="Invoice Preview"
+              />
+            </div>
+          )}
+
           {/* Editable hint — only shown when no invoice generated yet */}
           {!invoice && isOpen && (jobServices.length + jobParts.length) > 0 && (
             <p className="text-xs text-slate-500 mb-3">
-              Adjust item costs below if needed — total updates automatically.
+              Prices update the preview above automatically.
             </p>
           )}
 
