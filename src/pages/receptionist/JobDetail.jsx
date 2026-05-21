@@ -10,9 +10,11 @@ import {
 import {
   ArrowLeft, Clock, CheckCircle2, Wrench, Package,
   PlusCircle, Trash2, Loader2, MessageSquare, Mail,
-  CreditCard, Banknote, X, ChevronDown, Receipt, Printer
+  CreditCard, Banknote, X, ChevronDown, Receipt, Printer, FileDown
 } from 'lucide-react'
 import { renderInvoiceToHtml } from '../../components/InvoicePrintTemplate'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 
 // ── Live timer ─────────────────────────────────────────────
 function LiveTimer({ createdAt, completedAt }) {
@@ -498,6 +500,49 @@ export default function JobDetail() {
     win.onload = () => { win.print(); win.onafterprint = () => win.close() }
   }
 
+  const generateInvoicePdf = (invoiceHtml) => new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1px;border:none;visibility:hidden;'
+    document.body.appendChild(iframe)
+    iframe.onload = async () => {
+      try {
+        const canvas = await html2canvas(iframe.contentDocument.body, {
+          scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794,
+        })
+        document.body.removeChild(iframe)
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+        const pdfW = pdf.internal.pageSize.getWidth()
+        const pdfH = pdf.internal.pageSize.getHeight()
+        const imgH = (canvas.height * pdfW) / canvas.width
+        const pages = Math.ceil(imgH / pdfH)
+        for (let i = 0; i < pages; i++) {
+          if (i > 0) pdf.addPage()
+          pdf.addImage(imgData, 'JPEG', 0, -(i * pdfH), pdfW, imgH)
+        }
+        resolve(pdf)
+      } catch (err) {
+        document.body.removeChild(iframe)
+        reject(err)
+      }
+    }
+    iframe.contentDocument.write(invoiceHtml)
+    iframe.contentDocument.close()
+  })
+
+  const downloadPdf = async () => {
+    if (!invoice) return
+    const templateId = localStorage.getItem('pitstop_invoice_style') || 'classic'
+    const logoDataUrl = localStorage.getItem('pitstop_logo') || ''
+    const html = renderInvoiceToHtml({ invoice, job, jobServices, jobParts, templateId, logoDataUrl })
+    try {
+      const pdf = await generateInvoicePdf(html)
+      pdf.save(`Invoice-${invoice.invoice_number}.pdf`)
+    } catch (err) {
+      alert('PDF generation failed: ' + err.message)
+    }
+  }
+
   const buildPreviewInvoice = () => ({
     invoice_number: 'PREVIEW',
     service_total: serviceTotal,
@@ -527,6 +572,11 @@ export default function JobDetail() {
     const templateId = localStorage.getItem('pitstop_invoice_style') || 'classic'
     const logoDataUrl = localStorage.getItem('pitstop_logo') || ''
     const invoiceHtml = renderInvoiceToHtml({ invoice: inv, job, jobServices, jobParts, templateId, logoDataUrl })
+    let pdfBase64 = null
+    try {
+      const pdf = await generateInvoicePdf(invoiceHtml)
+      pdfBase64 = pdf.output('datauristring').split(',')[1]
+    } catch { /* email sends without PDF if generation fails */ }
     const { error } = await supabase.functions.invoke('send-invoice', {
       body: {
         to: job.customers.email,
@@ -534,6 +584,7 @@ export default function JobDetail() {
         invoiceNumber: inv.invoice_number,
         totalAmount: inv.total_amount,
         customerName: job.customers.name,
+        pdfBase64,
       },
     })
     return !error
@@ -741,13 +792,22 @@ export default function JobDetail() {
 
         {/* Invoice preview */}
         <Section title="Invoice Preview" icon={Receipt} action={invoice ? (
-          <button
-            onClick={printInvoice}
-            title="Print / Download Invoice"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-600 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-medium transition"
-          >
-            <Printer className="w-3.5 h-3.5" /> Print
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={printInvoice}
+              title="Print Invoice"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-600 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-medium transition"
+            >
+              <Printer className="w-3.5 h-3.5" /> Print
+            </button>
+            <button
+              onClick={downloadPdf}
+              title="Download PDF"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-600 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-medium transition"
+            >
+              <FileDown className="w-3.5 h-3.5" /> PDF
+            </button>
+          </div>
         ) : null}>
           {/* Rendered invoice template preview */}
           {(jobServices.length + jobParts.length) > 0 && (

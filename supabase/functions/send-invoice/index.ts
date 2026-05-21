@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, invoiceHtml, invoiceNumber, totalAmount, customerName } = await req.json()
+    const { to, invoiceHtml, invoiceNumber, totalAmount, customerName, pdfBase64 } = await req.json()
 
     if (!to || !invoiceHtml) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -44,6 +44,12 @@ serve(async (req) => {
         to: [to],
         subject: `Your Invoice ${invoiceNumber} from Pitstop Garage — ${formattedTotal}`,
         html: invoiceHtml,
+        ...(pdfBase64 ? {
+          attachments: [{
+            filename: `Invoice-${invoiceNumber}.pdf`,
+            content: pdfBase64,
+          }],
+        } : {}),
       }),
     })
 
