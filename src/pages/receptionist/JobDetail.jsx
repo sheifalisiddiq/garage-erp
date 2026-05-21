@@ -48,7 +48,7 @@ function Section({ title, icon: Icon, accent, action, children }) {
 }
 
 // ── Invoice Sent Modal ─────────────────────────────────────
-function InvoiceSentModal({ invoice, job, onMarkPaid, onClose }) {
+function InvoiceSentModal({ invoice, job, emailSent, onMarkPaid, onClose }) {
   const [payMethod, setPayMethod] = useState('cash')
   const [marking, setMarking] = useState(false)
 
@@ -75,7 +75,11 @@ function InvoiceSentModal({ invoice, job, onMarkPaid, onClose }) {
               { icon: CheckCircle2, color: 'text-emerald-400', text: `Invoice ${invoice.invoice_number} created` },
               { icon: CheckCircle2, color: 'text-emerald-400', text: `Total: ${formatAED(invoice.total_amount)}` },
               { icon: MessageSquare, color: 'text-rose-400', text: `SMS sent to ${job.customers?.phone}` },
-              ...(job.customers?.email ? [{ icon: Mail, color: 'text-purple-400', text: `Email sent to ${job.customers.email}` }] : []),
+              ...(job.customers?.email
+                ? [emailSent
+                    ? { icon: Mail, color: 'text-purple-400', text: `Invoice emailed to ${job.customers.email}` }
+                    : { icon: Mail, color: 'text-slate-500', text: `Email failed — check Resend config` }]
+                : [{ icon: Mail, color: 'text-slate-500', text: 'No email on customer record' }]),
             ].map(({ icon: Icon, color, text }, i) => (
               <div key={i} className="flex items-center gap-3">
                 <Icon className={`w-5 h-5 flex-shrink-0 ${color}`} />
@@ -169,6 +173,7 @@ export default function JobDetail() {
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
 
   // add-service state
   const [selService, setSelService] = useState('')
@@ -225,9 +230,10 @@ export default function JobDetail() {
     supabase.from('parts').select('*').order('name').then(({ data }) => setAllParts(data || []))
   }, [fetchJob])
 
-  const addService = async () => {
-    if (!selService) return
-    const svc = allServices.find(s => s.id === selService)
+  const addService = async (serviceId) => {
+    const sid = serviceId ?? selService
+    if (!sid) return
+    const svc = allServices.find(s => s.id === sid)
     if (!svc) return
     const defaultVatRate = einvoicing.defaultVatRate ?? 0
     const { vatAmount, lineTotal } = calculateLineVat(svc.cost, defaultVatRate)
@@ -243,15 +249,17 @@ export default function JobDetail() {
     fetchJob()
   }
 
-  const addPart = async () => {
-    if (!selPart) return
-    const part = allParts.find(p => p.id === selPart)
+  const addPart = async (partId, qty) => {
+    const pid = partId ?? selPart
+    const pqty = qty ?? selQty
+    if (!pid) return
+    const part = allParts.find(p => p.id === pid)
     if (!part) return
     const defaultVatRate = einvoicing.defaultVatRate ?? 0
-    const lineNet = part.cost * selQty
+    const lineNet = part.cost * pqty
     const { vatAmount, lineTotal } = calculateLineVat(lineNet, defaultVatRate)
     const { error } = await supabase.from('job_parts').insert({
-      job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: selQty,
+      job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: pqty,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'EA',
     })
     if (!error) { setSelPart(''); setSelQty(1); fetchJob() }
@@ -347,7 +355,8 @@ export default function JobDetail() {
       if (invErr) throw invErr
       setInvoice(inv)
       await fetchJob()
-      sendInvoiceEmail(inv)
+      const sent = await sendInvoiceEmail(inv)
+      setEmailSent(!!sent)
       setShowModal(true)
     } catch (err) {
       alert('Error generating invoice: ' + err.message)
@@ -408,7 +417,8 @@ export default function JobDetail() {
 
       if (invErr) throw invErr
       setInvoice(inv)
-      sendInvoiceEmail(inv)
+      const sent = await sendInvoiceEmail(inv)
+      setEmailSent(!!sent)
 
       // Decrement stock for each part used in this job
       if (jobParts.length > 0) {
@@ -464,11 +474,11 @@ export default function JobDetail() {
   }
 
   const sendInvoiceEmail = async (inv) => {
-    if (!job.customers?.email) return
+    if (!job.customers?.email) return false
     const templateId = localStorage.getItem('pitstop_invoice_style') || 'classic'
     const logoDataUrl = localStorage.getItem('pitstop_logo') || ''
     const invoiceHtml = renderInvoiceToHtml({ invoice: inv, job, jobServices, jobParts, templateId, logoDataUrl })
-    supabase.functions.invoke('send-invoice', {
+    const { error } = await supabase.functions.invoke('send-invoice', {
       body: {
         to: job.customers.email,
         invoiceHtml,
@@ -477,6 +487,7 @@ export default function JobDetail() {
         customerName: job.customers.name,
       },
     })
+    return !error
   }
 
   const markPaidFromDetail = async (payMethod) => {
@@ -587,23 +598,18 @@ export default function JobDetail() {
           )}
 
           {isOpen && (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <select className={selectCls} value={selService} onChange={e => setSelService(e.target.value)}>
-                  <option value="">Select service to add...</option>
-                  {allServices.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} — {formatAED(s.cost)}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              </div>
-              <button
-                onClick={addService}
-                disabled={!selService}
-                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
+            <div className="relative">
+              <select
+                className={selectCls}
+                value={selService}
+                onChange={e => { if (e.target.value) addService(e.target.value) }}
               >
-                <PlusCircle className="w-4 h-4" /> Add Service
-              </button>
+                <option value="">+ Select service to add...</option>
+                {allServices.map(s => (
+                  <option key={s.id} value={s.id}>{s.name} — {formatAED(s.cost)}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
           )}
 
@@ -638,8 +644,12 @@ export default function JobDetail() {
           {isOpen && (
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <select className={selectCls} value={selPart} onChange={e => setSelPart(e.target.value)}>
-                  <option value="">Select part to add...</option>
+                <select
+                  className={selectCls}
+                  value={selPart}
+                  onChange={e => setSelPart(e.target.value)}
+                >
+                  <option value="">+ Select part to add...</option>
                   {allParts.map(p => (
                     <option key={p.id} value={p.id}>{p.name} — {formatAED(p.cost)} / {p.unit}</option>
                   ))}
@@ -656,7 +666,7 @@ export default function JobDetail() {
                   className="w-20 bg-surface-600 border border-white/[0.08] text-white rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <button
-                  onClick={addPart}
+                  onClick={() => addPart()}
                   disabled={!selPart}
                   className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition disabled:opacity-40"
                 >
@@ -682,7 +692,7 @@ export default function JobDetail() {
           </button>
         ) : null}>
           {/* Editable hint — only shown when no invoice generated yet */}
-          {!invoice && (jobServices.length + jobParts.length) > 0 && (
+          {!invoice && isOpen && (jobServices.length + jobParts.length) > 0 && (
             <p className="text-xs text-slate-500 mb-3">
               Adjust item costs below if needed — total updates automatically.
             </p>
@@ -794,7 +804,7 @@ export default function JobDetail() {
           </div>
 
           {/* eInvoicing fields — shown only before invoice is generated */}
-          {!invoice && (jobServices.length + jobParts.length) > 0 && (
+          {!invoice && isOpen && (jobServices.length + jobParts.length) > 0 && (
             <div className="space-y-3 mb-4 border-t border-white/[0.06] pt-4">
               {/* Due date */}
               <div className="flex items-center gap-3">
@@ -905,30 +915,30 @@ export default function JobDetail() {
           )}
 
           {/* Action buttons */}
-          {!invoice && (jobServices.length + jobParts.length) > 0 && (
+          {!invoice && isOpen && (
             <div className="space-y-2">
-              {isOpen && (
+              <button
+                onClick={completeAndInvoice}
+                disabled={completing}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+              >
+                {completing
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                  : <><CheckCircle2 className="w-4 h-4" /> Complete Job & Generate Invoice</>
+                }
+              </button>
+              {(jobServices.length + jobParts.length) > 0 && (
                 <button
-                  onClick={completeAndInvoice}
+                  onClick={generateInvoiceOnly}
                   disabled={completing}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface-600 border border-white/[0.08] hover:border-brand-500/40 text-slate-300 hover:text-white text-sm font-medium rounded-xl transition disabled:opacity-50"
                 >
                   {completing
-                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                    : <><CheckCircle2 className="w-4 h-4" /> Complete Job & Generate Invoice</>
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                    : <><Receipt className="w-4 h-4" /> Generate Invoice Only</>
                   }
                 </button>
               )}
-              <button
-                onClick={generateInvoiceOnly}
-                disabled={completing}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-surface-600 border border-white/[0.08] hover:border-brand-500/40 text-slate-300 hover:text-white text-sm font-medium rounded-xl transition disabled:opacity-50"
-              >
-                {completing
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-                  : <><Receipt className="w-4 h-4" /> Generate Invoice Only</>
-                }
-              </button>
             </div>
           )}
 
@@ -977,6 +987,7 @@ export default function JobDetail() {
         <InvoiceSentModal
           invoice={invoice}
           job={job}
+          emailSent={emailSent}
           onMarkPaid={markPaid}
           onClose={() => setShowModal(false)}
         />
