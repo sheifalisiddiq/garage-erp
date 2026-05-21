@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Users, Wrench, FileText, Plus, Trash2, Save,
-  X, ChevronDown, Phone, Mail, Clock, Edit2, Check
+  X, ChevronDown, Phone, Mail, Clock, Edit2, Check,
+  LayoutTemplate, Upload, ImageIcon
 } from 'lucide-react'
 
 /* ── Local-storage helpers ───────────────────────────── */
@@ -522,6 +523,235 @@ function TemplatesTab() {
 }
 
 /* ══════════════════════════════════════════════════════ */
+/*  Tab 4 — Invoice Templates                            */
+/* ══════════════════════════════════════════════════════ */
+const INVOICE_STYLES = [
+  {
+    id: 'classic',
+    name: 'Classic',
+    description: 'Clean serif layout with ruled dividers',
+    preview: (
+      <div style={{ fontFamily: 'Georgia, serif', fontSize: 7, lineHeight: 1.5, color: '#1a1a1a', padding: 8, background: '#fff', borderRadius: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid #1a1a1a', paddingBottom: 4, marginBottom: 4 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 9 }}>Pitstop Garage</div>
+            <div style={{ color: '#777', fontSize: 6 }}>info@pitstop.ae</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontWeight: 900, fontSize: 8 }}>INVOICE</div>
+            <div style={{ color: '#777', fontSize: 6 }}>INV-0042</div>
+          </div>
+        </div>
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ color: '#888', fontSize: 5.5, textTransform: 'uppercase', letterSpacing: 1 }}>Bill To</div>
+          <div style={{ fontWeight: 700 }}>Ahmed Hassan</div>
+        </div>
+        <div style={{ borderBottom: '1px solid #ddd', paddingBottom: 2, marginBottom: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Oil Change</span><span>AED 120</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Brake Pads</span><span>AED 320</span></div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, borderTop: '1.5px solid #1a1a1a', paddingTop: 2 }}>
+          <span>Total</span><span>AED 440</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'modern',
+    name: 'Modern',
+    description: 'Bold crimson header with accent styling',
+    preview: (
+      <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 7, lineHeight: 1.5, borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ background: '#c0392b', padding: '6px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ color: '#fff', fontWeight: 900, fontSize: 8 }}>Pitstop Garage</div>
+          <div style={{ color: '#fff', textAlign: 'right' }}>
+            <div style={{ fontSize: 5.5, opacity: 0.75 }}>INVOICE</div>
+            <div style={{ fontWeight: 900 }}>INV-0042</div>
+          </div>
+        </div>
+        <div style={{ padding: '6px 8px', background: '#fff' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+            <div><div style={{ color: '#c0392b', fontSize: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Client</div><div style={{ fontWeight: 700 }}>Ahmed Hassan</div></div>
+            <div><div style={{ color: '#c0392b', fontSize: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Vehicle</div><div style={{ fontWeight: 700 }}>Toyota Camry</div></div>
+          </div>
+          <div style={{ background: '#f0f0f0', borderRadius: 3 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 5px', background: '#e0e0e0', borderRadius: '3px 3px 0 0', fontSize: 5.5, color: '#555' }}><span>Item</span><span>Amount</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 5px', borderBottom: '1px solid #e8e8e8' }}><span>Oil Change</span><span>AED 120</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 5px' }}><span>Brake Pads</span><span>AED 320</span></div>
+          </div>
+          <div style={{ marginTop: 4, textAlign: 'right' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#c0392b', color: '#fff', padding: '2px 6px', borderRadius: 3 }}>
+              <span style={{ fontSize: 5.5 }}>TOTAL</span><span style={{ fontWeight: 900, fontSize: 8 }}>AED 440</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    description: 'Ultra-clean with generous whitespace',
+    preview: (
+      <div style={{ fontFamily: 'system-ui, sans-serif', fontSize: 7, lineHeight: 1.6, color: '#111', padding: 10, background: '#fff', borderRadius: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
+          <div style={{ fontWeight: 800, fontSize: 9 }}>Pitstop</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ color: '#bbb', fontSize: 5, textTransform: 'uppercase', letterSpacing: 1.5 }}>Invoice</div>
+            <div style={{ fontWeight: 700 }}>INV-0042</div>
+          </div>
+        </div>
+        <div style={{ color: '#bbb', fontSize: 5, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 2 }}>Billed to</div>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>Ahmed Hassan · Toyota Camry</div>
+        <div style={{ borderTop: '1px solid #f0f0f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid #f5f5f5' }}><span>Oil Change</span><span style={{ color: '#555' }}>120.00</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid #f5f5f5' }}><span>Brake Pads</span><span style={{ color: '#555' }}>320.00</span></div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, paddingTop: 4, borderTop: '1.5px solid #111', fontWeight: 800, fontSize: 8 }}>
+          <span>Total</span><span>AED 440</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    description: 'Corporate bordered table with blue tones',
+    preview: (
+      <div style={{ fontFamily: 'Segoe UI, Arial, sans-serif', fontSize: 7, lineHeight: 1.5, color: '#1e293b', padding: 8, background: '#fff', borderRadius: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div><div style={{ fontWeight: 800, fontSize: 9 }}>Pitstop Garage</div><div style={{ color: '#64748b', fontSize: 5.5 }}>info@pitstop.ae</div></div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontWeight: 900, fontSize: 10, color: '#1e40af' }}>INVOICE</div>
+            <div style={{ fontSize: 5.5, color: '#64748b' }}>INV-0042</div>
+          </div>
+        </div>
+        <div style={{ background: '#f1f5f9', borderLeft: '3px solid #1e40af', padding: '3px 5px', marginBottom: 5, borderRadius: '0 3px 3px 0' }}>
+          <div style={{ color: '#1e40af', fontSize: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Bill To</div>
+          <div style={{ fontWeight: 700 }}>Ahmed Hassan · Toyota Camry</div>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr style={{ background: '#1e293b', color: '#fff' }}><th style={{ padding: '2px 4px', textAlign: 'left', fontSize: 5 }}>Description</th><th style={{ padding: '2px 4px', textAlign: 'right', fontSize: 5 }}>Amount</th></tr></thead>
+          <tbody>
+            <tr style={{ background: '#fff', borderBottom: '1px solid #e2e8f0' }}><td style={{ padding: '2px 4px' }}>Oil Change</td><td style={{ padding: '2px 4px', textAlign: 'right' }}>AED 120</td></tr>
+            <tr style={{ background: '#f8fafc' }}><td style={{ padding: '2px 4px' }}>Brake Pads</td><td style={{ padding: '2px 4px', textAlign: 'right' }}>AED 320</td></tr>
+          </tbody>
+          <tfoot><tr style={{ background: '#1e40af' }}><td style={{ padding: '3px 4px', color: '#fff', fontWeight: 800, fontSize: 7 }}>TOTAL</td><td style={{ padding: '3px 4px', color: '#fff', fontWeight: 900, textAlign: 'right', fontSize: 8 }}>AED 440</td></tr></tfoot>
+        </table>
+      </div>
+    ),
+  },
+]
+
+function InvoiceTemplatesTab() {
+  const [selected, setSelected] = useState(() => localStorage.getItem('pitstop_invoice_style') || 'classic')
+  const [logoDataUrl, setLogoDataUrl] = useState(() => localStorage.getItem('pitstop_logo') || '')
+  const [saved, setSaved]   = useState(false)
+  const fileRef = useRef(null)
+
+  const selectStyle = (id) => {
+    setSelected(id)
+    localStorage.setItem('pitstop_invoice_style', id)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result
+      setLogoDataUrl(dataUrl)
+      localStorage.setItem('pitstop_logo', dataUrl)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeLogo = () => {
+    setLogoDataUrl('')
+    localStorage.removeItem('pitstop_logo')
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-bold text-white">Invoice Templates</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Choose a visual style for printed & emailed invoices</p>
+        </div>
+        <SavedBadge show={saved} />
+      </div>
+
+      {/* Logo upload */}
+      <div className="bg-surface-700 border border-white/[0.06] rounded-2xl p-5">
+        <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-4">Company Logo</p>
+        <div className="flex items-center gap-4">
+          <div className="w-24 h-16 rounded-xl bg-surface-600 border border-white/[0.08] flex items-center justify-center overflow-hidden flex-shrink-0">
+            {logoDataUrl
+              ? <img src={logoDataUrl} alt="logo" className="w-full h-full object-contain p-1" />
+              : <ImageIcon className="w-6 h-6 text-slate-600" />
+            }
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-slate-300">
+              {logoDataUrl ? 'Logo uploaded — appears on all invoice styles' : 'No logo yet — company name shown as text fallback'}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                {logoDataUrl ? 'Change Logo' : 'Upload Logo'}
+              </button>
+              {logoDataUrl && (
+                <button
+                  onClick={removeLogo}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-600 text-slate-400 hover:text-red-400 text-xs transition"
+                >
+                  <X className="w-3.5 h-3.5" /> Remove
+                </button>
+              )}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+          </div>
+        </div>
+      </div>
+
+      {/* Template style cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {INVOICE_STYLES.map(tpl => (
+          <button
+            key={tpl.id}
+            onClick={() => selectStyle(tpl.id)}
+            className={`relative text-left rounded-2xl border-2 p-4 transition-all ${
+              selected === tpl.id
+                ? 'border-brand-500 bg-brand-600/10 ring-2 ring-brand-500/30'
+                : 'border-white/[0.07] bg-surface-700 hover:border-white/20'
+            }`}
+          >
+            {selected === tpl.id && (
+              <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-brand-600 flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            )}
+            {/* Mini preview */}
+            <div className="rounded-lg overflow-hidden border border-white/[0.08] mb-3 pointer-events-none select-none" style={{ transform: 'scale(1)', transformOrigin: 'top left' }}>
+              {tpl.preview}
+            </div>
+            <p className="text-sm font-bold text-white">{tpl.name}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{tpl.description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════ */
 /*  Main Settings page                                   */
 /* ══════════════════════════════════════════════════════ */
 export default function Settings() {
@@ -537,15 +767,17 @@ export default function Settings() {
 
       {/* Tab bar */}
       <div className="flex gap-2 flex-wrap">
-        <Tab active={tab === 'staff'}    onClick={() => setTab('staff')}    icon={Users}    label="Staff" />
-        <Tab active={tab === 'catalogue'} onClick={() => setTab('catalogue')} icon={Wrench}   label="Service Catalogue" />
-        <Tab active={tab === 'templates'} onClick={() => setTab('templates')} icon={FileText}  label="Quote Templates" />
+        <Tab active={tab === 'staff'}      onClick={() => setTab('staff')}      icon={Users}           label="Staff" />
+        <Tab active={tab === 'catalogue'}  onClick={() => setTab('catalogue')}  icon={Wrench}          label="Service Catalogue" />
+        <Tab active={tab === 'templates'}  onClick={() => setTab('templates')}  icon={FileText}        label="Quote Templates" />
+        <Tab active={tab === 'invoice'}    onClick={() => setTab('invoice')}    icon={LayoutTemplate}  label="Invoice Templates" />
       </div>
 
       {/* Tab content */}
-      {tab === 'staff'     && <StaffTab />}
-      {tab === 'catalogue' && <CatalogueTab />}
-      {tab === 'templates' && <TemplatesTab />}
+      {tab === 'staff'      && <StaffTab />}
+      {tab === 'catalogue'  && <CatalogueTab />}
+      {tab === 'templates'  && <TemplatesTab />}
+      {tab === 'invoice'    && <InvoiceTemplatesTab />}
     </div>
   )
 }

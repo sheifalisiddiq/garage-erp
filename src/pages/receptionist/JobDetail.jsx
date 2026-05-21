@@ -9,8 +9,9 @@ import {
 import {
   ArrowLeft, Clock, CheckCircle2, Wrench, Package,
   PlusCircle, Trash2, Loader2, MessageSquare, Mail,
-  CreditCard, Banknote, X, ChevronDown, Receipt
+  CreditCard, Banknote, X, ChevronDown, Receipt, Printer
 } from 'lucide-react'
+import { renderInvoiceToHtml } from '../../components/InvoicePrintTemplate'
 
 // ── Live timer ─────────────────────────────────────────────
 function LiveTimer({ createdAt, completedAt }) {
@@ -32,12 +33,13 @@ function LiveTimer({ createdAt, completedAt }) {
 }
 
 // ── Section wrapper ─────────────────────────────────────────
-function Section({ title, icon: Icon, accent, children }) {
+function Section({ title, icon: Icon, accent, action, children }) {
   return (
     <div className="bg-surface-700 border border-white/[0.06] rounded-2xl overflow-hidden">
       <div className={`flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06] ${accent || ''}`}>
         <Icon className="w-4 h-4 text-slate-400" />
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">{title}</h3>
+        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex-1">{title}</h3>
+        {action}
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -257,6 +259,7 @@ export default function JobDetail() {
       if (invErr) throw invErr
       setInvoice(inv)
       await fetchJob()
+      sendInvoiceEmail(inv)
       setShowModal(true)
     } catch (err) {
       alert('Error generating invoice: ' + err.message)
@@ -297,6 +300,7 @@ export default function JobDetail() {
 
       if (invErr) throw invErr
       setInvoice(inv)
+      sendInvoiceEmail(inv)
 
       // Decrement stock for each part used in this job
       if (jobParts.length > 0) {
@@ -338,6 +342,33 @@ export default function JobDetail() {
       payment_method: payMethod,
     }).eq('id', invoice.id)
     if (!error) { await fetchJob(); setShowModal(false) }
+  }
+
+  const printInvoice = () => {
+    const templateId = localStorage.getItem('pitstop_invoice_style') || 'classic'
+    const logoDataUrl = localStorage.getItem('pitstop_logo') || ''
+    const html = renderInvoiceToHtml({ invoice, job, jobServices, jobParts, templateId, logoDataUrl })
+    const win = window.open('', '_blank', 'width=820,height=1000')
+    if (!win) return
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => { win.print(); win.onafterprint = () => win.close() }
+  }
+
+  const sendInvoiceEmail = async (inv) => {
+    if (!job.customers?.email) return
+    const templateId = localStorage.getItem('pitstop_invoice_style') || 'classic'
+    const logoDataUrl = localStorage.getItem('pitstop_logo') || ''
+    const invoiceHtml = renderInvoiceToHtml({ invoice: inv, job, jobServices, jobParts, templateId, logoDataUrl })
+    supabase.functions.invoke('send-invoice', {
+      body: {
+        to: job.customers.email,
+        invoiceHtml,
+        invoiceNumber: inv.invoice_number,
+        totalAmount: inv.total_amount,
+        customerName: job.customers.name,
+      },
+    })
   }
 
   const markPaidFromDetail = async (payMethod) => {
@@ -533,7 +564,15 @@ export default function JobDetail() {
         </Section>
 
         {/* Invoice preview */}
-        <Section title="Invoice Preview" icon={Receipt}>
+        <Section title="Invoice Preview" icon={Receipt} action={invoice ? (
+          <button
+            onClick={printInvoice}
+            title="Print / Download Invoice"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-600 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-medium transition"
+          >
+            <Printer className="w-3.5 h-3.5" /> Print
+          </button>
+        ) : null}>
           {/* Editable hint — only shown when no invoice generated yet */}
           {!invoice && (jobServices.length + jobParts.length) > 0 && (
             <p className="text-xs text-slate-500 mb-3">
