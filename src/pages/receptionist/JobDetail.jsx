@@ -237,16 +237,29 @@ export default function JobDetail() {
     if (!svc) return
     const defaultVatRate = einvoicing.defaultVatRate ?? 0
     const { vatAmount, lineTotal } = calculateLineVat(svc.cost, defaultVatRate)
+    const tempId = `temp-${Date.now()}`
+    setJobServices(prev => [...prev, {
+      id: tempId, service_id: svc.id, service_name: svc.name,
+      service_cost: svc.cost, vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal,
+    }])
     const { error } = await supabase.from('job_services').insert({
       job_id: id, service_id: svc.id, service_name: svc.name, service_cost: svc.cost,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'HUR',
     })
-    if (!error) await fetchJob()
+    if (error) {
+      setJobServices(prev => prev.filter(s => s.id !== tempId))
+    } else {
+      await fetchJob()
+    }
   }
 
   const removeService = async (lineId) => {
+    if (String(lineId).startsWith('temp-')) {
+      setJobServices(prev => prev.filter(s => s.id !== lineId))
+      return
+    }
+    setJobServices(prev => prev.filter(s => s.id !== lineId))
     await supabase.from('job_services').delete().eq('id', lineId)
-    fetchJob()
   }
 
   const addPart = async (partId, qty) => {
@@ -258,16 +271,30 @@ export default function JobDetail() {
     const defaultVatRate = einvoicing.defaultVatRate ?? 0
     const lineNet = part.cost * pqty
     const { vatAmount, lineTotal } = calculateLineVat(lineNet, defaultVatRate)
+    const tempId = `temp-${Date.now()}`
+    setJobParts(prev => [...prev, {
+      id: tempId, part_id: part.id, part_name: part.name,
+      part_cost: part.cost, quantity: pqty, vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal,
+    }])
+    setSelPart(''); setSelQty(1)
     const { error } = await supabase.from('job_parts').insert({
       job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: pqty,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'EA',
     })
-    if (!error) { setSelPart(''); setSelQty(1); await fetchJob() }
+    if (error) {
+      setJobParts(prev => prev.filter(p => p.id !== tempId))
+    } else {
+      await fetchJob()
+    }
   }
 
   const removePart = async (lineId) => {
+    if (String(lineId).startsWith('temp-')) {
+      setJobParts(prev => prev.filter(p => p.id !== lineId))
+      return
+    }
+    setJobParts(prev => prev.filter(p => p.id !== lineId))
     await supabase.from('job_parts').delete().eq('id', lineId)
-    fetchJob()
   }
 
   const serviceTotal = jobServices.reduce((s, l) => s + Number(l.service_cost), 0)
