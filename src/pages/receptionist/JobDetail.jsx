@@ -242,24 +242,22 @@ export default function JobDetail() {
       id: tempId, service_id: svc.id, service_name: svc.name,
       service_cost: svc.cost, vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal,
     }])
-    const { error } = await supabase.from('job_services').insert({
+    const { data: inserted, error } = await supabase.from('job_services').insert({
       job_id: id, service_id: svc.id, service_name: svc.name, service_cost: svc.cost,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'HUR',
-    })
+    }).select().single()
     if (error) {
       setJobServices(prev => prev.filter(s => s.id !== tempId))
     } else {
-      await fetchJob()
+      setJobServices(prev => prev.map(s => s.id === tempId ? inserted : s))
     }
   }
 
   const removeService = async (lineId) => {
-    if (String(lineId).startsWith('temp-')) {
-      setJobServices(prev => prev.filter(s => s.id !== lineId))
-      return
-    }
     setJobServices(prev => prev.filter(s => s.id !== lineId))
-    await supabase.from('job_services').delete().eq('id', lineId)
+    if (!String(lineId).startsWith('temp-')) {
+      await supabase.from('job_services').delete().eq('id', lineId)
+    }
   }
 
   const addPart = async (partId, qty) => {
@@ -277,24 +275,22 @@ export default function JobDetail() {
       part_cost: part.cost, quantity: pqty, vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal,
     }])
     setSelPart(''); setSelQty(1)
-    const { error } = await supabase.from('job_parts').insert({
+    const { data: inserted, error } = await supabase.from('job_parts').insert({
       job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: pqty,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'EA',
-    })
+    }).select().single()
     if (error) {
       setJobParts(prev => prev.filter(p => p.id !== tempId))
     } else {
-      await fetchJob()
+      setJobParts(prev => prev.map(p => p.id === tempId ? inserted : p))
     }
   }
 
   const removePart = async (lineId) => {
-    if (String(lineId).startsWith('temp-')) {
-      setJobParts(prev => prev.filter(p => p.id !== lineId))
-      return
-    }
     setJobParts(prev => prev.filter(p => p.id !== lineId))
-    await supabase.from('job_parts').delete().eq('id', lineId)
+    if (!String(lineId).startsWith('temp-')) {
+      await supabase.from('job_parts').delete().eq('id', lineId)
+    }
   }
 
   const serviceTotal = jobServices.reduce((s, l) => s + Number(l.service_cost), 0)
