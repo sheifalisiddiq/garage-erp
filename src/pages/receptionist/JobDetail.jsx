@@ -241,7 +241,7 @@ export default function JobDetail() {
       job_id: id, service_id: svc.id, service_name: svc.name, service_cost: svc.cost,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'HUR',
     })
-    if (!error) { setSelService(''); fetchJob() }
+    if (!error) await fetchJob()
   }
 
   const removeService = async (lineId) => {
@@ -262,7 +262,7 @@ export default function JobDetail() {
       job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: pqty,
       vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'EA',
     })
-    if (!error) { setSelPart(''); setSelQty(1); fetchJob() }
+    if (!error) { setSelPart(''); setSelQty(1); await fetchJob() }
   }
 
   const removePart = async (lineId) => {
@@ -602,7 +602,13 @@ export default function JobDetail() {
               <select
                 className={selectCls}
                 value={selService}
-                onChange={e => { if (e.target.value) addService(e.target.value) }}
+                onChange={async (e) => {
+                  const val = e.target.value
+                  if (!val) return
+                  setSelService(val)
+                  await addService(val)
+                  setSelService('')
+                }}
               >
                 <option value="">+ Select service to add...</option>
                 {allServices.map(s => (
