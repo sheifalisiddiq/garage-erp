@@ -245,3 +245,48 @@ begin
    where id = p_part_id;
 end;
 $$;
+
+-- ─────────────────────────────────────────
+-- UAE E-INVOICING: Mandatory fields migration
+-- Run this after the initial schema to add compliance columns
+-- ─────────────────────────────────────────
+
+-- invoices: UAE eInvoicing mandatory header fields
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS invoice_type_code TEXT DEFAULT '380';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS currency_code TEXT DEFAULT 'AED';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS accounting_currency TEXT DEFAULT 'AED';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_date DATE;
+
+-- invoices: transaction type flags
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_free_trade_zone BOOLEAN DEFAULT FALSE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_deemed_supply BOOLEAN DEFAULT FALSE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_margin_scheme BOOLEAN DEFAULT FALSE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_e_commerce BOOLEAN DEFAULT FALSE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_export BOOLEAN DEFAULT FALSE;
+
+-- invoices: document totals breakdown
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS net_amount NUMERIC(10,2);
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS tax_total NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS total_with_tax NUMERIC(10,2);
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payable_amount NUMERIC(10,2);
+
+-- invoices: buyer compliance fields
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_is_business BOOLEAN DEFAULT FALSE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_legal_id_type TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_legal_id_number TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_street TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_city TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_country TEXT DEFAULT 'AE';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS buyer_postal_code TEXT;
+
+-- job_services: per-line VAT fields
+ALTER TABLE job_services ADD COLUMN IF NOT EXISTS vat_rate NUMERIC(5,2) DEFAULT 0.00;
+ALTER TABLE job_services ADD COLUMN IF NOT EXISTS vat_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE job_services ADD COLUMN IF NOT EXISTS line_total NUMERIC(10,2);
+ALTER TABLE job_services ADD COLUMN IF NOT EXISTS unit_code TEXT DEFAULT 'HUR';
+
+-- job_parts: per-line VAT fields
+ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS vat_rate NUMERIC(5,2) DEFAULT 0.00;
+ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS vat_amount NUMERIC(10,2) DEFAULT 0.00;
+ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS line_total NUMERIC(10,2);
+ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS unit_code TEXT DEFAULT 'EA';

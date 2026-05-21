@@ -67,3 +67,59 @@ export function formatSignedAmount(n) {
   const abs = Math.abs(n)
   return (n >= 0 ? '+' : '−') + abs
 }
+
+// ── UAE E-Invoicing VAT helpers ─────────────────────────────
+
+// vatRate: -1 = Exempt, 0 = Zero-rated, 5 = Standard
+export function calculateLineVat(amount, vatRate) {
+  if (vatRate === -1 || vatRate === null || vatRate === undefined) {
+    return { vatAmount: 0, lineTotal: Number(amount) }
+  }
+  const vatAmount = Math.round(Number(amount) * (vatRate / 100) * 100) / 100
+  const lineTotal = Math.round((Number(amount) + vatAmount) * 100) / 100
+  return { vatAmount, lineTotal }
+}
+
+export function calculateInvoiceTotals(services, parts) {
+  let netAmount = 0
+  let taxTotal = 0
+  for (const s of services) {
+    const cost = Number(s.service_cost)
+    netAmount += cost
+    taxTotal += calculateLineVat(cost, s.vat_rate ?? 0).vatAmount
+  }
+  for (const p of parts) {
+    const cost = Number(p.part_cost) * p.quantity
+    netAmount += cost
+    taxTotal += calculateLineVat(cost, p.vat_rate ?? 0).vatAmount
+  }
+  netAmount = Math.round(netAmount * 100) / 100
+  taxTotal = Math.round(taxTotal * 100) / 100
+  const payableAmount = Math.round((netAmount + taxTotal) * 100) / 100
+  return { netAmount, taxTotal, payableAmount }
+}
+
+export function groupTaxByCategory(services, parts) {
+  const cats = {}
+  const add = (amount, vatRate) => {
+    const key = vatRate === -1 ? 'E' : vatRate === 0 ? 'Z' : 'S'
+    const { vatAmount } = calculateLineVat(amount, vatRate)
+    if (!cats[key]) cats[key] = { category: key, taxableAmt: 0, rate: vatRate === -1 ? null : vatRate, taxAmt: 0 }
+    cats[key].taxableAmt = Math.round((cats[key].taxableAmt + amount) * 100) / 100
+    cats[key].taxAmt = Math.round((cats[key].taxAmt + vatAmount) * 100) / 100
+  }
+  for (const s of services) add(Number(s.service_cost), s.vat_rate ?? 0)
+  for (const p of parts) add(Number(p.part_cost) * p.quantity, p.vat_rate ?? 0)
+  return Object.values(cats)
+}
+
+export function vatCategoryLabel(cat) {
+  if (cat === 'S') return 'Standard (S)'
+  if (cat === 'Z') return 'Zero Rate (Z)'
+  return 'Exempt (E)'
+}
+
+export function vatRateLabel(vatRate) {
+  if (vatRate === -1) return 'Exempt'
+  return `${vatRate}%`
+}

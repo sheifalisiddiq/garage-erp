@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import {
   formatAED, formatElapsed, elapsedSeconds,
-  formatTime, formatDateTime, statusColor
+  formatTime, formatDateTime, statusColor,
+  calculateLineVat, calculateInvoiceTotals,
 } from '../../lib/utils'
 import {
   ArrowLeft, Clock, CheckCircle2, Wrench, Package,
@@ -93,9 +94,21 @@ function InvoiceSentModal({ invoice, job, onMarkPaid, onClose }) {
               <span>Parts</span>
               <span>{formatAED(invoice.parts_total)}</span>
             </div>
+            {Number(invoice.tax_total) > 0 && (
+              <>
+                <div className="flex justify-between text-slate-400 mb-1 border-t border-white/10 pt-2">
+                  <span>Net Amount</span>
+                  <span>{formatAED(invoice.net_amount ?? invoice.total_amount)}</span>
+                </div>
+                <div className="flex justify-between text-slate-400 mb-2">
+                  <span>VAT</span>
+                  <span>{formatAED(invoice.tax_total)}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between font-bold text-white text-base border-t border-white/10 pt-3">
-              <span>Total</span>
-              <span className="text-gold-400">{formatAED(invoice.total_amount)}</span>
+              <span>Total Due</span>
+              <span className="text-gold-400">{formatAED(invoice.payable_amount ?? invoice.total_amount)}</span>
             </div>
           </div>
 
@@ -163,6 +176,32 @@ export default function JobDetail() {
   const [selPart, setSelPart] = useState('')
   const [selQty, setSelQty] = useState(1)
 
+  // UAE eInvoicing fields
+  const [einvoicing] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pitstop_einvoicing') || '{}') } catch { return {} }
+  })
+  const [dueDate, setDueDate] = useState(() => {
+    const days = (() => {
+      try { return JSON.parse(localStorage.getItem('pitstop_einvoicing') || '{}').defaultDueDays ?? 30 } catch { return 30 }
+    })()
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return d.toISOString().slice(0, 10)
+  })
+  const [buyerIsBusiness, setBuyerIsBusiness] = useState(false)
+  const [buyerLegalIdType, setBuyerLegalIdType] = useState('TL')
+  const [buyerLegalIdNumber, setBuyerLegalIdNumber] = useState('')
+  const [buyerStreet, setBuyerStreet] = useState('')
+  const [buyerCity, setBuyerCity] = useState('')
+  const [buyerCountry, setBuyerCountry] = useState('AE')
+  const [buyerPostalCode, setBuyerPostalCode] = useState('')
+  const [showTxnFlags, setShowTxnFlags] = useState(false)
+  const [isFreeTradeZone, setIsFreeTradeZone] = useState(false)
+  const [isDeemedSupply, setIsDeemedSupply] = useState(false)
+  const [isMarginScheme, setIsMarginScheme] = useState(false)
+  const [isEcommerce, setIsEcommerce] = useState(false)
+  const [isExport, setIsExport] = useState(false)
+
   const fetchJob = useCallback(async () => {
     const [{ data: jobData }, { data: svcData }, { data: partData }] = await Promise.all([
       supabase.from('jobs').select(`
@@ -190,8 +229,11 @@ export default function JobDetail() {
     if (!selService) return
     const svc = allServices.find(s => s.id === selService)
     if (!svc) return
+    const defaultVatRate = einvoicing.defaultVatRate ?? 0
+    const { vatAmount, lineTotal } = calculateLineVat(svc.cost, defaultVatRate)
     const { error } = await supabase.from('job_services').insert({
-      job_id: id, service_id: svc.id, service_name: svc.name, service_cost: svc.cost
+      job_id: id, service_id: svc.id, service_name: svc.name, service_cost: svc.cost,
+      vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'HUR',
     })
     if (!error) { setSelService(''); fetchJob() }
   }
@@ -205,8 +247,12 @@ export default function JobDetail() {
     if (!selPart) return
     const part = allParts.find(p => p.id === selPart)
     if (!part) return
+    const defaultVatRate = einvoicing.defaultVatRate ?? 0
+    const lineNet = part.cost * selQty
+    const { vatAmount, lineTotal } = calculateLineVat(lineNet, defaultVatRate)
     const { error } = await supabase.from('job_parts').insert({
-      job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: selQty
+      job_id: id, part_id: part.id, part_name: part.name, part_cost: part.cost, quantity: selQty,
+      vat_rate: defaultVatRate, vat_amount: vatAmount, line_total: lineTotal, unit_code: 'EA',
     })
     if (!error) { setSelPart(''); setSelQty(1); fetchJob() }
   }
@@ -218,23 +264,45 @@ export default function JobDetail() {
 
   const serviceTotal = jobServices.reduce((s, l) => s + Number(l.service_cost), 0)
   const partsTotal = jobParts.reduce((s, l) => s + Number(l.part_cost) * l.quantity, 0)
-  const grandTotal = serviceTotal + partsTotal
+  const { netAmount, taxTotal, payableAmount } = calculateInvoiceTotals(jobServices, jobParts)
+  const grandTotal = payableAmount
+
+  const saveServiceVat = async (lineId, vatRate) => {
+    const cost = Number(jobServices.find(l => l.id === lineId)?.service_cost || 0)
+    const { vatAmount, lineTotal } = calculateLineVat(cost, vatRate)
+    setJobServices(prev => prev.map(l => l.id === lineId ? { ...l, vat_rate: vatRate, vat_amount: vatAmount, line_total: lineTotal } : l))
+    await supabase.from('job_services').update({ vat_rate: vatRate, vat_amount: vatAmount, line_total: lineTotal }).eq('id', lineId)
+  }
+
+  const savePartVat = async (lineId, vatRate) => {
+    const line = jobParts.find(l => l.id === lineId)
+    const cost = Number(line?.part_cost || 0) * (line?.quantity || 1)
+    const { vatAmount, lineTotal } = calculateLineVat(cost, vatRate)
+    setJobParts(prev => prev.map(l => l.id === lineId ? { ...l, vat_rate: vatRate, vat_amount: vatAmount, line_total: lineTotal } : l))
+    await supabase.from('job_parts').update({ vat_rate: vatRate, vat_amount: vatAmount, line_total: lineTotal }).eq('id', lineId)
+  }
 
   const updateServiceCostLocal = (lineId, val) => {
     setJobServices(prev => prev.map(l => l.id === lineId ? { ...l, service_cost: val } : l))
   }
   const saveServiceCost = async (lineId, val) => {
     const num = parseFloat(val) || 0
-    setJobServices(prev => prev.map(l => l.id === lineId ? { ...l, service_cost: num } : l))
-    await supabase.from('job_services').update({ service_cost: num }).eq('id', lineId)
+    const vatRate = jobServices.find(l => l.id === lineId)?.vat_rate ?? 0
+    const { vatAmount, lineTotal } = calculateLineVat(num, vatRate)
+    setJobServices(prev => prev.map(l => l.id === lineId ? { ...l, service_cost: num, vat_amount: vatAmount, line_total: lineTotal } : l))
+    await supabase.from('job_services').update({ service_cost: num, vat_amount: vatAmount, line_total: lineTotal }).eq('id', lineId)
   }
   const updatePartCostLocal = (lineId, val) => {
     setJobParts(prev => prev.map(l => l.id === lineId ? { ...l, part_cost: val } : l))
   }
   const savePartCost = async (lineId, val) => {
     const num = parseFloat(val) || 0
-    setJobParts(prev => prev.map(l => l.id === lineId ? { ...l, part_cost: num } : l))
-    await supabase.from('job_parts').update({ part_cost: num }).eq('id', lineId)
+    const line = jobParts.find(l => l.id === lineId)
+    const vatRate = line?.vat_rate ?? 0
+    const lineNet = num * (line?.quantity || 1)
+    const { vatAmount, lineTotal } = calculateLineVat(lineNet, vatRate)
+    setJobParts(prev => prev.map(l => l.id === lineId ? { ...l, part_cost: num, vat_amount: vatAmount, line_total: lineTotal } : l))
+    await supabase.from('job_parts').update({ part_cost: num, vat_amount: vatAmount, line_total: lineTotal }).eq('id', lineId)
   }
 
   const generateInvoiceOnly = async () => {
@@ -252,7 +320,27 @@ export default function JobDetail() {
         customer_email: job.customers?.email,
         service_total: serviceTotal,
         parts_total: partsTotal,
-        total_amount: grandTotal,
+        total_amount: payableAmount,
+        net_amount: netAmount,
+        tax_total: taxTotal,
+        total_with_tax: payableAmount,
+        payable_amount: payableAmount,
+        currency_code: 'AED',
+        accounting_currency: 'AED',
+        invoice_type_code: '380',
+        due_date: dueDate || null,
+        is_free_trade_zone: isFreeTradeZone,
+        is_deemed_supply: isDeemedSupply,
+        is_margin_scheme: isMarginScheme,
+        is_e_commerce: isEcommerce,
+        is_export: isExport,
+        buyer_is_business: buyerIsBusiness,
+        buyer_legal_id_type: buyerIsBusiness ? buyerLegalIdType : null,
+        buyer_legal_id_number: buyerIsBusiness ? buyerLegalIdNumber : null,
+        buyer_street: buyerIsBusiness ? buyerStreet : null,
+        buyer_city: buyerIsBusiness ? buyerCity : null,
+        buyer_country: buyerIsBusiness ? buyerCountry : null,
+        buyer_postal_code: buyerIsBusiness ? buyerPostalCode : null,
         status: 'sent',
         sent_via: job.customers?.email ? 'sms,email' : 'sms',
       }).select().single()
@@ -293,7 +381,27 @@ export default function JobDetail() {
         customer_email: job.customers?.email,
         service_total: serviceTotal,
         parts_total: partsTotal,
-        total_amount: grandTotal,
+        total_amount: payableAmount,
+        net_amount: netAmount,
+        tax_total: taxTotal,
+        total_with_tax: payableAmount,
+        payable_amount: payableAmount,
+        currency_code: 'AED',
+        accounting_currency: 'AED',
+        invoice_type_code: '380',
+        due_date: dueDate || null,
+        is_free_trade_zone: isFreeTradeZone,
+        is_deemed_supply: isDeemedSupply,
+        is_margin_scheme: isMarginScheme,
+        is_e_commerce: isEcommerce,
+        is_export: isExport,
+        buyer_is_business: buyerIsBusiness,
+        buyer_legal_id_type: buyerIsBusiness ? buyerLegalIdType : null,
+        buyer_legal_id_number: buyerIsBusiness ? buyerLegalIdNumber : null,
+        buyer_street: buyerIsBusiness ? buyerStreet : null,
+        buyer_city: buyerIsBusiness ? buyerCity : null,
+        buyer_country: buyerIsBusiness ? buyerCountry : null,
+        buyer_postal_code: buyerIsBusiness ? buyerPostalCode : null,
         status: 'sent',
         sent_via: job.customers?.email ? 'sms,email' : 'sms',
       }).select().single()
@@ -582,10 +690,10 @@ export default function JobDetail() {
 
           <div className="space-y-2 text-sm mb-4">
             {jobServices.map(l => (
-              <div key={l.id} className="flex items-center justify-between gap-3 text-slate-300">
-                <span className="flex-1 truncate">{l.service_name}</span>
+              <div key={l.id} className="flex items-center justify-between gap-2 text-slate-300 flex-wrap">
+                <span className="flex-1 truncate min-w-0">{l.service_name}</span>
                 {!invoice ? (
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
                     <span className="text-slate-500 text-xs">AED</span>
                     <input
                       type="number"
@@ -594,19 +702,31 @@ export default function JobDetail() {
                       value={l.service_cost}
                       onChange={e => updateServiceCostLocal(l.id, e.target.value)}
                       onBlur={e => saveServiceCost(l.id, e.target.value)}
-                      className="w-24 text-right bg-surface-600 border border-white/[0.08] text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      className="w-20 text-right bg-surface-600 border border-white/[0.08] text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                     />
+                    <select
+                      value={l.vat_rate ?? 0}
+                      onChange={e => saveServiceVat(l.id, Number(e.target.value))}
+                      className="text-xs bg-surface-600 border border-white/[0.08] text-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    >
+                      <option value={0}>0% VAT</option>
+                      <option value={5}>5% VAT</option>
+                      <option value={-1}>Exempt</option>
+                    </select>
                   </div>
                 ) : (
-                  <span className="flex-shrink-0">{formatAED(l.service_cost)}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0 text-xs text-slate-400">
+                    <span>{formatAED(l.service_cost)}</span>
+                    {Number(l.vat_amount) > 0 && <span className="text-slate-500">+{formatAED(l.vat_amount)} VAT</span>}
+                  </div>
                 )}
               </div>
             ))}
             {jobParts.map(l => (
-              <div key={l.id} className="flex items-center justify-between gap-3 text-slate-300">
-                <span className="flex-1 truncate">{l.part_name} <span className="text-slate-500">×{l.quantity}</span></span>
+              <div key={l.id} className="flex items-center justify-between gap-2 text-slate-300 flex-wrap">
+                <span className="flex-1 truncate min-w-0">{l.part_name} <span className="text-slate-500">×{l.quantity}</span></span>
                 {!invoice ? (
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
                     <span className="text-slate-500 text-xs">AED/unit</span>
                     <input
                       type="number"
@@ -615,14 +735,26 @@ export default function JobDetail() {
                       value={l.part_cost}
                       onChange={e => updatePartCostLocal(l.id, e.target.value)}
                       onBlur={e => savePartCost(l.id, e.target.value)}
-                      className="w-24 text-right bg-surface-600 border border-white/[0.08] text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      className="w-20 text-right bg-surface-600 border border-white/[0.08] text-white rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                     />
-                    <span className="text-slate-500 text-xs min-w-[60px] text-right">
+                    <select
+                      value={l.vat_rate ?? 0}
+                      onChange={e => savePartVat(l.id, Number(e.target.value))}
+                      className="text-xs bg-surface-600 border border-white/[0.08] text-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    >
+                      <option value={0}>0% VAT</option>
+                      <option value={5}>5% VAT</option>
+                      <option value={-1}>Exempt</option>
+                    </select>
+                    <span className="text-slate-500 text-xs min-w-[55px] text-right">
                       = {formatAED(Number(l.part_cost) * l.quantity)}
                     </span>
                   </div>
                 ) : (
-                  <span className="flex-shrink-0">{formatAED(Number(l.part_cost) * l.quantity)}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0 text-xs text-slate-400">
+                    <span>{formatAED(Number(l.part_cost) * l.quantity)}</span>
+                    {Number(l.vat_amount) > 0 && <span className="text-slate-500">+{formatAED(l.vat_amount)} VAT</span>}
+                  </div>
                 )}
               </div>
             ))}
@@ -641,13 +773,136 @@ export default function JobDetail() {
                   <span>Parts subtotal</span>
                   <span>{formatAED(partsTotal)}</span>
                 </div>
+                {taxTotal > 0 && (
+                  <>
+                    <div className="flex justify-between text-slate-400 border-t border-white/[0.06] pt-2">
+                      <span>Net Amount</span>
+                      <span>{formatAED(netAmount)}</span>
+                    </div>
+                    <div className="flex justify-between text-amber-400/80">
+                      <span>VAT</span>
+                      <span>+ {formatAED(taxTotal)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="border-t border-white/[0.06] pt-3 flex justify-between font-bold text-white text-base">
-                  <span>Total Amount</span>
+                  <span>Total Amount Due</span>
                   <span className="text-gold-400 text-lg">{formatAED(grandTotal)}</span>
                 </div>
               </>
             )}
           </div>
+
+          {/* eInvoicing fields — shown only before invoice is generated */}
+          {!invoice && (jobServices.length + jobParts.length) > 0 && (
+            <div className="space-y-3 mb-4 border-t border-white/[0.06] pt-4">
+              {/* Due date */}
+              <div className="flex items-center gap-3">
+                <label className="text-xs text-slate-400 w-24 flex-shrink-0">Payment Due</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="flex-1 bg-surface-600 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+
+              {/* Business customer toggle */}
+              <div className="flex items-center gap-3">
+                <label className="text-xs text-slate-400 w-24 flex-shrink-0">Business Customer</label>
+                <button
+                  onClick={() => setBuyerIsBusiness(v => !v)}
+                  className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${buyerIsBusiness ? 'bg-brand-600' : 'bg-surface-500'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${buyerIsBusiness ? 'left-5' : 'left-0.5'}`} />
+                </button>
+                {!buyerIsBusiness && <span className="text-xs text-slate-500">Individual customer</span>}
+              </div>
+
+              {/* B2B buyer fields */}
+              {buyerIsBusiness && (
+                <div className="bg-surface-600 rounded-xl p-4 space-y-3">
+                  <p className="text-xs text-slate-400 font-medium">Business Buyer Details</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <select
+                        value={buyerLegalIdType}
+                        onChange={e => setBuyerLegalIdType(e.target.value)}
+                        className="w-full bg-surface-700 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 appearance-none pr-7"
+                      >
+                        <option value="TL">TL — Trade License</option>
+                        <option value="EID">EID — Emirates ID</option>
+                        <option value="PAS">PAS — Passport</option>
+                        <option value="CD">CD — Cabinet Decision</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                    </div>
+                    <input
+                      value={buyerLegalIdNumber}
+                      onChange={e => setBuyerLegalIdNumber(e.target.value)}
+                      placeholder="Registration number"
+                      className="bg-surface-700 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <input
+                      value={buyerStreet}
+                      onChange={e => setBuyerStreet(e.target.value)}
+                      placeholder="Street address"
+                      className="bg-surface-700 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <input
+                      value={buyerCity}
+                      onChange={e => setBuyerCity(e.target.value)}
+                      placeholder="City"
+                      className="bg-surface-700 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <input
+                      value={buyerPostalCode}
+                      onChange={e => setBuyerPostalCode(e.target.value)}
+                      placeholder="Postal code"
+                      className="bg-surface-700 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <input
+                      value={buyerCountry}
+                      onChange={e => setBuyerCountry(e.target.value.toUpperCase().slice(0, 2))}
+                      placeholder="AE"
+                      maxLength={2}
+                      className="bg-surface-700 border border-white/[0.08] text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction type flags (collapsible) */}
+              <button
+                onClick={() => setShowTxnFlags(v => !v)}
+                className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition"
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showTxnFlags ? 'rotate-180' : ''}`} />
+                Transaction type flags {[isFreeTradeZone, isDeemedSupply, isMarginScheme, isEcommerce, isExport].some(Boolean) && <span className="text-brand-400">· active</span>}
+              </button>
+              {showTxnFlags && (
+                <div className="bg-surface-600 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { label: 'Free Trade Zone', val: isFreeTradeZone, set: setIsFreeTradeZone },
+                    { label: 'Deemed Supply', val: isDeemedSupply, set: setIsDeemedSupply },
+                    { label: 'Margin Scheme', val: isMarginScheme, set: setIsMarginScheme },
+                    { label: 'E-Commerce', val: isEcommerce, set: setIsEcommerce },
+                    { label: 'Export', val: isExport, set: setIsExport },
+                  ].map(({ label, val, set: setFn }) => (
+                    <label key={label} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={val}
+                        onChange={e => setFn(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded accent-brand-500"
+                      />
+                      <span className="text-xs text-slate-400">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action buttons */}
           {!invoice && (jobServices.length + jobParts.length) > 0 && (
@@ -681,7 +936,10 @@ export default function JobDetail() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-xl px-4 py-2.5">
                 <Receipt className="w-4 h-4" />
-                Invoice {invoice.invoice_number} sent — awaiting payment
+                <span>Invoice {invoice.invoice_number} sent — awaiting payment</span>
+                {invoice.due_date && (
+                  <span className="ml-auto text-xs text-slate-500">Due {new Date(invoice.due_date).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button

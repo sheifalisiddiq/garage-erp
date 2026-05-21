@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import {
   Users, Wrench, FileText, Plus, Trash2, Save,
   X, ChevronDown, Phone, Mail, Clock, Edit2, Check,
-  LayoutTemplate, Upload, ImageIcon
+  LayoutTemplate, Upload, ImageIcon, ShieldCheck
 } from 'lucide-react'
 
 /* ── Local-storage helpers ───────────────────────────── */
@@ -752,6 +752,214 @@ function InvoiceTemplatesTab() {
 }
 
 /* ══════════════════════════════════════════════════════ */
+/*  Tab 5 — UAE E-Invoicing Compliance                  */
+/* ══════════════════════════════════════════════════════ */
+const DEFAULT_EINVOICING = {
+  tin: '',
+  legalRegType: 'TL',
+  legalRegNumber: '',
+  sellerStreet: '',
+  sellerCity: '',
+  sellerCountry: 'AE',
+  sellerPostalCode: '',
+  defaultDueDays: 30,
+  defaultVatRate: 0,
+}
+
+function EInvoicingTab() {
+  const [cfg, setCfg] = useState(() => load('pitstop_einvoicing', DEFAULT_EINVOICING))
+  const [saved, setSaved] = useState(false)
+
+  const set = (key, val) => setCfg(prev => ({ ...prev, [key]: val }))
+
+  const handleSave = () => {
+    save('pitstop_einvoicing', cfg)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  const isTinValid = /^\d{10}$/.test(cfg.tin)
+  const electronicId = cfg.tin ? `0235${cfg.tin}` : '0235[enter TIN above]'
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-bold text-white">UAE E-Invoicing Compliance</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Mandatory seller fields per UAE MoF eInvoicing spec (PINT-AE)</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <SavedBadge show={saved} />
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition"
+          >
+            <Save className="w-4 h-4" />
+            Save Changes
+          </button>
+        </div>
+      </div>
+
+      {/* Seller identification */}
+      <div className="bg-surface-700 border border-white/[0.06] rounded-2xl p-6 flex flex-col gap-5">
+        <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Seller Identification</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Tax Identification Number (TIN) *</label>
+            <input
+              value={cfg.tin}
+              onChange={e => set('tin', e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="10-digit TIN (first 10 digits of your TRN)"
+              maxLength={10}
+              className={FIELD}
+            />
+            {cfg.tin && !isTinValid && (
+              <p className="text-xs text-red-400 mt-1">TIN must be exactly 10 digits</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Electronic Endpoint ID (auto-generated)</label>
+            <div className={`${FIELD} text-slate-400 cursor-default select-all font-mono text-xs`}>{electronicId}</div>
+            <p className="text-[10px] text-slate-600 mt-1">Fixed prefix 0235 + your TIN · register this with your ASP</p>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Legal Registration Type *</label>
+            <div className="relative">
+              <select
+                value={cfg.legalRegType}
+                onChange={e => set('legalRegType', e.target.value)}
+                className={`${FIELD} appearance-none pr-9`}
+              >
+                <option value="TL">TL — Trade License</option>
+                <option value="EID">EID — Emirates ID</option>
+                <option value="PAS">PAS — Passport</option>
+                <option value="CD">CD — Cabinet Decision</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Legal Registration Number *</label>
+            <input
+              value={cfg.legalRegNumber}
+              onChange={e => set('legalRegNumber', e.target.value)}
+              placeholder="e.g. TL-12345678"
+              className={FIELD}
+            />
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-white/[0.06]">
+          <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-4">Seller Address</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="text-xs text-slate-400 mb-1.5 block font-medium">Street Address *</label>
+              <input
+                value={cfg.sellerStreet}
+                onChange={e => set('sellerStreet', e.target.value)}
+                placeholder="e.g. 15 Al Quoz Industrial Area"
+                className={FIELD}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1.5 block font-medium">City *</label>
+              <input
+                value={cfg.sellerCity}
+                onChange={e => set('sellerCity', e.target.value)}
+                placeholder="e.g. Dubai"
+                className={FIELD}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1.5 block font-medium">Postal Code</label>
+              <input
+                value={cfg.sellerPostalCode}
+                onChange={e => set('sellerPostalCode', e.target.value)}
+                placeholder="e.g. 00000"
+                className={FIELD}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1.5 block font-medium">Country Code</label>
+              <input
+                value={cfg.sellerCountry}
+                onChange={e => set('sellerCountry', e.target.value.toUpperCase().slice(0, 2))}
+                placeholder="AE"
+                maxLength={2}
+                className={FIELD}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Invoice defaults */}
+      <div className="bg-surface-700 border border-white/[0.06] rounded-2xl p-6 flex flex-col gap-5">
+        <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Invoice Defaults</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Payment Due Days</label>
+            <input
+              type="number"
+              min="0"
+              max="365"
+              value={cfg.defaultDueDays}
+              onChange={e => set('defaultDueDays', Number(e.target.value))}
+              className={FIELD}
+            />
+            <p className="text-[10px] text-slate-600 mt-1">Due date = invoice date + this many days</p>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Default VAT Rate</label>
+            <div className="relative">
+              <select
+                value={cfg.defaultVatRate}
+                onChange={e => set('defaultVatRate', Number(e.target.value))}
+                className={`${FIELD} appearance-none pr-9`}
+              >
+                <option value={0}>0% — Zero-rated</option>
+                <option value={5}>5% — Standard</option>
+                <option value={-1}>Exempt</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            </div>
+            <p className="text-[10px] text-slate-600 mt-1">Applied to new line items by default</p>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1.5 block font-medium">Invoice Currency</label>
+            <input value="AED (fixed)" disabled className={`${FIELD} text-slate-500 cursor-not-allowed`} />
+            <p className="text-[10px] text-slate-600 mt-1">Fixed per UAE eInvoicing requirements</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Compliance checklist */}
+      <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5">
+        <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">Compliance Checklist</p>
+        {[
+          { label: 'TIN entered (10 digits)', done: isTinValid },
+          { label: 'Legal registration type selected', done: !!cfg.legalRegType },
+          { label: 'Legal registration number entered', done: !!cfg.legalRegNumber.trim() },
+          { label: 'Street address entered', done: !!cfg.sellerStreet.trim() },
+          { label: 'City entered', done: !!cfg.sellerCity.trim() },
+        ].map(({ label, done }) => (
+          <div key={label} className="flex items-center gap-2.5 py-1.5">
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-emerald-500/20' : 'bg-surface-600'}`}>
+              {done && <Check className="w-2.5 h-2.5 text-emerald-400" />}
+            </div>
+            <span className={`text-xs ${done ? 'text-emerald-400' : 'text-slate-500'}`}>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════ */
 /*  Main Settings page                                   */
 /* ══════════════════════════════════════════════════════ */
 export default function Settings() {
@@ -771,13 +979,15 @@ export default function Settings() {
         <Tab active={tab === 'catalogue'}  onClick={() => setTab('catalogue')}  icon={Wrench}          label="Service Catalogue" />
         <Tab active={tab === 'templates'}  onClick={() => setTab('templates')}  icon={FileText}        label="Quote Templates" />
         <Tab active={tab === 'invoice'}    onClick={() => setTab('invoice')}    icon={LayoutTemplate}  label="Invoice Templates" />
+        <Tab active={tab === 'einvoicing'} onClick={() => setTab('einvoicing')} icon={ShieldCheck}     label="E-Invoicing" />
       </div>
 
       {/* Tab content */}
-      {tab === 'staff'      && <StaffTab />}
-      {tab === 'catalogue'  && <CatalogueTab />}
-      {tab === 'templates'  && <TemplatesTab />}
-      {tab === 'invoice'    && <InvoiceTemplatesTab />}
+      {tab === 'staff'       && <StaffTab />}
+      {tab === 'catalogue'   && <CatalogueTab />}
+      {tab === 'templates'   && <TemplatesTab />}
+      {tab === 'invoice'     && <InvoiceTemplatesTab />}
+      {tab === 'einvoicing'  && <EInvoicingTab />}
     </div>
   )
 }
