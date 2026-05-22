@@ -4,6 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        teal: {
+          300: '#7fffd4',
+          400: '#2fffd4',
+          500: '#00d4a9',
+          600: '#00b890',
+          700: '#009674',
+        },
         brand: {
           50:  'var(--accent-50)',
           100: 'var(--accent-100)',
