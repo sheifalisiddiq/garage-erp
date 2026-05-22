@@ -52,21 +52,21 @@ export function isToday(ts) {
 
 export function statusColor(status) {
   switch (status) {
-    case 'open':   return 'text-rose-400 bg-rose-400/10 border-rose-400/20'
-    case 'complete': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-    case 'paid':   return 'text-gold-400 bg-gold-400/10 border-gold-400/20'
-    case 'sent':   return 'text-amber-400 bg-amber-400/10 border-amber-400/20'
-    default:       return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
+    case 'open':     return 'status-badge-danger'
+    case 'complete': return 'status-badge-ok'
+    case 'paid':     return 'status-badge-ok'
+    case 'sent':     return 'status-badge-danger'
+    default:         return 'status-badge-neutral'
   }
 }
 
 export function quoteStatusColor(status) {
   switch (status) {
-    case 'draft':    return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
-    case 'sent':     return 'text-amber-400 bg-amber-400/10 border-amber-400/20'
-    case 'accepted': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-    case 'expired':  return 'text-red-400 bg-red-400/10 border-red-400/20'
-    default:         return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
+    case 'draft':    return 'status-badge-neutral'
+    case 'sent':     return 'status-badge-danger'
+    case 'accepted': return 'status-badge-ok'
+    case 'expired':  return 'status-badge-danger'
+    default:         return 'status-badge-neutral'
   }
 }
 

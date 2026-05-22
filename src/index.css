@@ -17,6 +17,7 @@
   --accent-600: #be123c;
   --accent-700: #9f1239;
   --accent-glow: 225 29 72;
+  --accent-text: #ffffff;
 }
 
 /* ---------- LIGHT (default) ---------- */
@@ -40,8 +41,10 @@
   --hero-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.025 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   --shine: none;
   --ok:          #16a34a;
+  --ok-rgb:      22, 163, 74;
   --warn:        #d97706;
   --danger:      #dc2626;
+  --danger-rgb:  220, 38, 38;
   --info:        #2563eb;
   --ok-soft:     rgba(22,163,74,0.10);
   --warn-soft:   rgba(217,119,6,0.10);
@@ -81,8 +84,10 @@
   --hero-noise:     none;
   --shine: none;
   --ok:          #34d399;
+  --ok-rgb:      52, 211, 153;
   --warn:        #fbbf24;
   --danger:      #f87171;
+  --danger-rgb:  248, 113, 113;
   --info:        #60a5fa;
   --ok-soft:     rgba(52,211,153,0.12);
   --warn-soft:   rgba(251,191,36,0.12);
@@ -137,6 +142,7 @@
   --accent-600: #f4f4f5;     /* Hover white */
   --accent-700: #e4e4e7;
   --accent-glow: 255 255 255;
+  --accent-text: #000000;
 }
 :root[data-theme="light"][data-accent="monochrome"] {
   --accent-50:  #fafafa;
@@ -147,6 +153,7 @@
   --accent-600: #18181b;
   --accent-700: #27272a;
   --accent-glow: 0 0 0;
+  --accent-text: #ffffff;
 }
 
 /* Density */
@@ -1039,4 +1046,21 @@ option:checked { background-color: rgba(var(--accent-glow) / 0.15); color: var(-
 :root[data-theme="dark"][data-accent="monochrome"] button:hover {
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* ---------- CUSTOM HIGH-CONTRAST STATUS BADGES ---------- */
+.status-badge-ok {
+  color: var(--ok) !important;
+  background-color: var(--ok-soft) !important;
+  border-color: rgba(var(--ok-rgb), 0.25) !important;
+}
+.status-badge-danger {
+  color: var(--danger) !important;
+  background-color: var(--danger-soft) !important;
+  border-color: rgba(var(--danger-rgb), 0.25) !important;
+}
+.status-badge-neutral {
+  color: var(--text-muted) !important;
+  background-color: var(--pill-bg) !important;
+  border-color: var(--border) !important;
 }

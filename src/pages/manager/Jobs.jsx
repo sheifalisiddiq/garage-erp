@@ -64,7 +64,14 @@ export default function ManagerJobs() {
                   <p className="text-xs text-slate-500">{job.description}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  {inv && <p className="text-base font-bold text-gold-400">{formatAED(inv.total_amount)}</p>}
+                  {inv && (
+                    <p
+                      className="text-base font-bold"
+                      style={{ color: inv.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}
+                    >
+                      {formatAED(inv.total_amount)}
+                    </p>
+                  )}
                   {job.elapsed_time_seconds != null && (
                     <p className="text-xs text-slate-500">{formatElapsed(job.elapsed_time_seconds)}</p>
                   )}

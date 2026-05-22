@@ -104,7 +104,7 @@ function JobCard({ job, invoice, onClick }) {
                 <LiveTimer createdAt={job.created_at} />
               </div>
             ) : invoice ? (
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{formatAED(invoice.total_amount)}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: invoice.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>{formatAED(invoice.total_amount)}</span>
             ) : null}
             <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{formatTime(job.created_at)}</span>
             <ChevronRight size={15} style={{ color: 'var(--text-faint)', transition: 'color 160ms ease, transform 160ms ease' }}
@@ -207,7 +207,7 @@ export default function ReceptionistDashboard() {
           style={{
             display: 'flex', alignItems: 'center', gap: 7,
             background: 'var(--accent-500)',
-            color: 'white',
+            color: 'var(--accent-text)',
             border: 0, borderRadius: 12, cursor: 'pointer',
             padding: '9px 16px', fontSize: 13, fontWeight: 600,
             fontFamily: 'inherit', flexShrink: 0,

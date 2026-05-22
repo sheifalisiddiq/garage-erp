@@ -56,7 +56,7 @@ export default function InvoiceList() {
                 <p className="text-xs text-slate-400">{inv.jobs?.vehicles?.make} {inv.jobs?.vehicles?.model} · {formatDateTime(inv.created_at)}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-base font-bold text-gold-400">{formatAED(inv.total_amount)}</p>
+                <p className="text-base font-bold" style={{ color: inv.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>{formatAED(inv.total_amount)}</p>
                 {inv.paid_at && <p className="text-xs text-slate-500 capitalize">{inv.payment_method}</p>}
               </div>
               <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-brand-400 transition" />

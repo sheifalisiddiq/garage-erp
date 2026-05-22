@@ -30,14 +30,13 @@ function progressFromElapsed(createdAt) {
   return Math.min(secs / (4 * 3600), 0.92)
 }
 
-/* ── Status badge helper ─────────────────────────────── */
 function statusBadgeClass(cls) {
   switch (cls) {
-    case 'in-progress': return 'bg-rose-400/10 text-rose-400 border-rose-400/20'
-    case 'complete':    return 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
-    case 'paid':        return 'bg-amber-400/10 text-amber-400 border-amber-400/20'
-    case 'invoiced':    return 'bg-blue-400/10 text-blue-400 border-blue-400/20'
-    default:            return 'bg-zinc-400/10 text-zinc-400 border-zinc-400/20'
+    case 'in-progress': return 'status-badge-danger'
+    case 'complete':    return 'status-badge-ok'
+    case 'paid':        return 'status-badge-ok'
+    case 'invoiced':    return 'status-badge-danger'
+    default:            return 'status-badge-neutral'
   }
 }
 
@@ -349,7 +348,7 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenu
             }}>{s.label}</div>
             <div style={{
               fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em',
-              color: 'var(--text)', fontFamily: 'var(--font-mono)',
+              color: 'var(--text)', fontVariantNumeric: 'tabular-nums',
             }}>{s.value}</div>
           </div>
         ))}
@@ -552,7 +551,13 @@ function JobsTable({ todayJobs, invoices }) {
                     {label}
                   </Badge>
                 </td>
-                <td style={{ textAlign: 'right' }} className="mono">
+                <td
+                  style={{
+                    textAlign: 'right',
+                    color: amount > 0 ? (inv?.status === 'paid' ? 'var(--ok)' : 'var(--danger)') : 'var(--text-dim)',
+                  }}
+                  className="font-medium"
+                >
                   {amount > 0 ? formatAED(amount) : '—'}
                 </td>
                 <td style={{ textAlign: 'right' }}>
@@ -608,7 +613,7 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
                   </div>
                   <div className="upnext-sub">{job?.customers?.name || '—'}</div>
                 </div>
-                <span className="upnext-tag" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                <span className="upnext-tag" style={{ color: 'var(--danger)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {formatAED(inv.total_amount)}
                 </span>
               </div>
@@ -647,7 +652,7 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                     {m.jobs} job{m.jobs !== 1 ? 's' : ''}
-                    {m.revenue > 0 && <span style={{ color: 'var(--warn)', marginLeft: 6 }}>{formatAED(m.revenue)}</span>}
+                    {m.revenue > 0 && <span style={{ color: 'var(--ok)', marginLeft: 6 }}>{formatAED(m.revenue)}</span>}
                     {m.activeJob && <span style={{ color: 'var(--info)', marginLeft: 6 }}>· {m.activeJob}</span>}
                   </div>
                 </div>
@@ -861,15 +866,12 @@ export default function ManagerDashboard() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {lastUpdated && (
-            <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               Updated at {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <button className="chip" onClick={fetchData}>
             <RefreshCw size={12} /> Refresh
-          </button>
-          <button className="chip is-active">
-            <Plus size={12} /> New job
           </button>
         </div>
       </div>

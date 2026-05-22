@@ -114,7 +114,7 @@ function InvoiceSentModal({ invoice, job, emailSent, onMarkPaid, onClose }) {
             )}
             <div className="flex justify-between font-bold text-white text-base border-t border-white/10 pt-3">
               <span>Total Due</span>
-              <span className="text-gold-400">{formatAED(invoice.payable_amount ?? invoice.total_amount)}</span>
+              <span style={{ color: invoice.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>{formatAED(invoice.payable_amount ?? invoice.total_amount)}</span>
             </div>
           </div>
 
@@ -685,7 +685,7 @@ export default function JobDetail() {
                 <div key={line.id} className="flex items-center justify-between bg-surface-600 rounded-xl px-4 py-2.5">
                   <span className="text-sm text-white">{line.service_name}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-gold-400">{formatAED(line.service_cost)}</span>
+                    <span className="text-sm font-semibold" style={{ color: invoice?.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>{formatAED(line.service_cost)}</span>
                     {isOpen && (
                       <button onClick={() => removeService(line.id)} className="text-slate-500 hover:text-red-400 transition">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -736,7 +736,7 @@ export default function JobDetail() {
                   <span className="text-sm text-white">{line.part_name}</span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-400">×{line.quantity}</span>
-                    <span className="text-sm font-semibold text-gold-400">
+                    <span className="text-sm font-semibold" style={{ color: invoice?.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>
                       {formatAED(Number(line.part_cost) * line.quantity)}
                     </span>
                     {isOpen && (
@@ -934,7 +934,7 @@ export default function JobDetail() {
                 )}
                 <div className="border-t border-white/[0.06] pt-3 flex justify-between font-bold text-white text-base">
                   <span>Total Amount Due</span>
-                  <span className="text-gold-400 text-lg">{formatAED(grandTotal)}</span>
+                  <span className="text-lg" style={{ color: invoice?.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>{formatAED(grandTotal)}</span>
                 </div>
               </>
             )}
@@ -1081,7 +1081,7 @@ export default function JobDetail() {
 
           {invoice && invoice.status === 'sent' && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 rounded-xl px-4 py-2.5">
+              <div className="flex items-center gap-2 text-sm text-rose-400 bg-rose-400/10 border border-rose-400/20 rounded-xl px-4 py-2.5">
                 <Receipt className="w-4 h-4" />
                 <span>Invoice {invoice.invoice_number} sent — awaiting payment</span>
                 {invoice.due_date && (
@@ -1114,7 +1114,7 @@ export default function JobDetail() {
                   {invoice.payment_method} · {formatDateTime(invoice.paid_at)}
                 </p>
               </div>
-              <span className="ml-auto font-bold text-gold-400">{formatAED(invoice.total_amount)}</span>
+              <span className="ml-auto font-bold" style={{ color: 'var(--ok)' }}>{formatAED(invoice.total_amount)}</span>
             </div>
           )}
         </Section>
