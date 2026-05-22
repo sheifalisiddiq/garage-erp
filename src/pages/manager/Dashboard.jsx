@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { formatAED, formatElapsed, formatTime, isToday } from '../../lib/utils'
-import {
-  RefreshCw, Plus, ArrowUpRight,
-} from 'lucide-react'
+import { cn, formatAED, formatElapsed, formatTime, isToday } from '../../lib/utils'
+import { RefreshCw, Plus, ArrowUpRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Progress } from '@/components/ui/progress'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 /* ── Helpers ─────────────────────────────────────────── */
 function getGreeting() {
@@ -25,6 +28,44 @@ function fmtRevenue(n) {
 function progressFromElapsed(createdAt) {
   const secs = (Date.now() - new Date(createdAt).getTime()) / 1000
   return Math.min(secs / (4 * 3600), 0.92)
+}
+
+/* ── Status badge helper ─────────────────────────────── */
+function statusBadgeClass(cls) {
+  switch (cls) {
+    case 'in-progress': return 'bg-rose-400/10 text-rose-400 border-rose-400/20'
+    case 'complete':    return 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
+    case 'paid':        return 'bg-amber-400/10 text-amber-400 border-amber-400/20'
+    case 'invoiced':    return 'bg-blue-400/10 text-blue-400 border-blue-400/20'
+    default:            return 'bg-zinc-400/10 text-zinc-400 border-zinc-400/20'
+  }
+}
+
+/* ── Dashboard skeleton loader ───────────────────────── */
+function DashboardSkeleton() {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-40 rounded" />
+          <Skeleton className="h-7 w-80 rounded-lg" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-20 rounded-lg" />
+          <Skeleton className="h-8 w-28 rounded-lg" />
+        </div>
+      </div>
+      <div className="top-grid">
+        <Skeleton className="h-52 rounded-2xl" />
+        <Skeleton className="h-52 rounded-2xl" />
+      </div>
+      <Skeleton className="h-72 rounded-2xl" />
+      <div className="bottom-grid">
+        <Skeleton className="h-80 rounded-2xl" />
+        <Skeleton className="h-80 rounded-2xl" />
+      </div>
+    </>
+  )
 }
 
 /* ── Sparkline ───────────────────────────────────────── */
@@ -340,9 +381,7 @@ function BayCard({ bay, idx }) {
         {bay.job}
       </div>
 
-      <div className="bay-progress">
-        <div style={{ width: (bay.progress * 100) + '%' }} />
-      </div>
+      <Progress value={bay.progress * 100} className="h-1.5" />
 
       <div className="bay-meta">
         <span className="bay-eta">
@@ -443,17 +482,13 @@ function JobsTable({ todayJobs, invoices }) {
           <div className="card-title">Today's Jobs</div>
           <div className="card-sub">Bay activity · last 24h</div>
         </div>
-        <div className="chart-time-row">
-          {JOB_FILTERS.map(f => (
-            <button
-              key={f}
-              className={'chip' + (filter === f ? ' is-active' : '')}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList className="h-8 p-0.5">
+            {JOB_FILTERS.map(f => (
+              <TabsTrigger key={f} value={f} className="h-7 px-3 text-xs">{f}</TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <table className="jobs-table">
@@ -513,7 +548,9 @@ function JobsTable({ todayJobs, invoices }) {
                   </span>
                 </td>
                 <td>
-                  <span className={'status-pill ' + cls}>{label}</span>
+                  <Badge variant="outline" className={cn('text-xs font-semibold', statusBadgeClass(cls))}>
+                    {label}
+                  </Badge>
                 </td>
                 <td style={{ textAlign: 'right' }} className="mono">
                   {amount > 0 ? formatAED(amount) : '—'}
@@ -539,21 +576,15 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
         <div>
           <div className="card-title">{tab === 'invoices' ? 'Pending Payment' : 'Mechanics'}</div>
           <div className="card-sub">
-            {tab === 'invoices' ? 'Outstanding invoices' : 'Today\'s performance'}
+            {tab === 'invoices' ? 'Outstanding invoices' : "Today's performance"}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <button
-            className={'chip' + (tab === 'invoices' ? ' is-active' : '')}
-            onClick={() => setTab('invoices')} style={{ padding: '4px 10px', fontSize: 11 }}>
-            Invoices
-          </button>
-          <button
-            className={'chip' + (tab === 'mechs' ? ' is-active' : '')}
-            onClick={() => setTab('mechs')} style={{ padding: '4px 10px', fontSize: 11 }}>
-            Mechanics
-          </button>
-        </div>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="h-8 p-0.5">
+            <TabsTrigger value="invoices" className="h-7 px-3 text-xs">Invoices</TabsTrigger>
+            <TabsTrigger value="mechs" className="h-7 px-3 text-xs">Mechanics</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {tab === 'invoices' && (
@@ -597,15 +628,19 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
             const initials = m.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
             return (
               <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-                  background: 'rgba(var(--accent-glow)/0.15)',
-                  display: 'grid', placeItems: 'center',
-                  color: 'var(--accent-400)', fontSize: 11, fontWeight: 700,
-                  border: m.activeJob ? '1.5px solid rgba(var(--accent-glow)/0.4)' : '1px solid var(--border)',
-                }}>
-                  {initials}
-                </div>
+                <Avatar className={cn(
+                  'h-9 w-9 shrink-0',
+                  m.activeJob ? 'ring-1 ring-brand-400/40' : ''
+                )}>
+                  <AvatarFallback className={cn(
+                    'text-xs font-bold',
+                    m.activeJob
+                      ? 'bg-brand-400/15 text-brand-400'
+                      : 'bg-muted text-muted-foreground'
+                  )}>
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>
                     {m.name}
@@ -800,13 +835,7 @@ export default function ManagerDashboard() {
   }, [fetchData])
 
   if (loading || !data) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, color: 'var(--text-muted)' }}>
-        <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
-        <span style={{ fontSize: 13 }}>Loading dashboard…</span>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   const firstName = user?.name?.split(' ')[0] || 'there'

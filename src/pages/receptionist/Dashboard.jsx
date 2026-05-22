@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { useSearch } from '../../context/SearchContext'
-import { formatAED, formatElapsed, elapsedSeconds, formatTime, statusColor } from '../../lib/utils'
-import {
-  PlusCircle, Clock,
-  Car, User, Wrench, RefreshCw, ChevronRight
-} from 'lucide-react'
+import { cn, formatAED, formatElapsed, elapsedSeconds, formatTime, statusColor } from '../../lib/utils'
+import { PlusCircle, Clock, Car, User, Wrench, RefreshCw, ChevronRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
 
 function LiveTimer({ createdAt }) {
   const [secs, setSecs] = useState(elapsedSeconds(createdAt))
@@ -59,13 +59,13 @@ function JobCard({ job, invoice, onClick }) {
               }}>
                 {job.job_number}
               </span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${statusColor(job.status)}`}>
+              <Badge variant="outline" className={cn('text-xs font-semibold', statusColor(job.status))}>
                 {isOpen ? 'In Progress' : 'Complete'}
-              </span>
+              </Badge>
               {invoice && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${statusColor(invoice.status)}`}>
+                <Badge variant="outline" className={cn('text-xs font-semibold', statusColor(invoice.status))}>
                   {isPaid ? 'Paid' : isPending ? 'Awaiting Payment' : invoice.status}
-                </span>
+                </Badge>
               )}
             </div>
 
@@ -235,25 +235,25 @@ export default function ReceptionistDashboard() {
 
       {/* Filter bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {FILTERS.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding: '6px 14px', borderRadius: 10, border: '1px solid',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                textTransform: 'capitalize', transition: 'all 150ms ease',
-                background: filter === f ? 'var(--accent-500)' : 'var(--pill-bg)',
-                borderColor: filter === f ? 'transparent' : 'var(--border)',
-                color: filter === f ? 'white' : 'var(--text-muted)',
-                boxShadow: filter === f ? '0 4px 12px -4px rgba(var(--accent-glow)/0.4)' : 'none',
-              }}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList className="h-9 p-1">
+            {FILTERS.map(f => {
+              const count = f === 'all' ? jobs.length
+                : f === 'open'     ? jobs.filter(j => j.status === 'open').length
+                : f === 'complete' ? jobs.filter(j => j.status === 'complete').length
+                : f === 'paid'     ? jobs.filter(j => invoices[j.id]?.status === 'paid').length
+                : jobs.filter(j => invoices[j.id]?.status === 'sent').length
+              return (
+                <TabsTrigger key={f} value={f} className="h-7 px-3 text-xs capitalize gap-1.5">
+                  {f}
+                  {count > 0 && (
+                    <span className="text-2xs opacity-55 tabular-nums">{count}</span>
+                  )}
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </Tabs>
         <button
           onClick={fetchJobs}
           style={{
@@ -282,9 +282,10 @@ export default function ReceptionistDashboard() {
 
       {/* Job list */}
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 180, color: 'var(--text-dim)', gap: 10 }}>
-          <RefreshCw size={18} className="animate-spin" />
-          <span style={{ fontSize: 14 }}>Loading jobs…</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '56px 20px', color: 'var(--text-muted)' }}>

@@ -1,3 +1,10 @@
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
+
 export function formatAED(amount) {
   const n = Number(amount) || 0
   return 'AED ' + n.toLocaleString('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

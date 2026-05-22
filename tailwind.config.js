@@ -3,7 +3,50 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      borderRadius: {
+        lg: '12px',
+        md: '10px',
+        sm: '8px',
+        xl: '16px',
+        '2xl': '20px',
+        full: '9999px',
+      },
       colors: {
+        /* shadcn semantic tokens → existing CSS variables */
+        background: 'var(--bg)',
+        foreground: 'var(--text)',
+        card: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--text)',
+        },
+        popover: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--text)',
+        },
+        primary: {
+          DEFAULT: 'var(--accent-500)',
+          foreground: '#ffffff',
+        },
+        secondary: {
+          DEFAULT: 'var(--pill-bg)',
+          foreground: 'var(--text-muted)',
+        },
+        muted: {
+          DEFAULT: 'var(--pill-bg)',
+          foreground: 'var(--text-dim)',
+        },
+        accent: {
+          DEFAULT: 'var(--card-soft)',
+          foreground: 'var(--text)',
+        },
+        destructive: {
+          DEFAULT: 'var(--danger)',
+          foreground: '#ffffff',
+        },
+        border: 'var(--border)',
+        input: 'var(--border)',
+        ring: 'var(--accent-500)',
+        /* existing custom colors */
         teal: {
           300: '#7fffd4',
           400: '#2fffd4',
