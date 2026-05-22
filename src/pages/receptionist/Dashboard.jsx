@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useSearch } from '../../context/SearchContext'
 import { formatAED, formatElapsed, elapsedSeconds, formatTime, statusColor } from '../../lib/utils'
 import {
-  PlusCircle, Clock, CheckCircle2, AlertCircle,
-  Car, User, Wrench, RefreshCw, ChevronRight, Banknote
+  PlusCircle, Clock,
+  Car, User, Wrench, RefreshCw, ChevronRight
 } from 'lucide-react'
 
 function LiveTimer({ createdAt }) {
@@ -18,56 +18,6 @@ function LiveTimer({ createdAt }) {
   return <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent-400)' }}>{formatElapsed(secs)}</span>
 }
 
-function StatCard({ label, value, icon: Icon, iconBg, iconColor }) {
-  return (
-    <div style={{
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: 16,
-      padding: '18px 20px 16px',
-      position: 'relative',
-      overflow: 'hidden',
-      transition: 'box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease',
-      cursor: 'default',
-    }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.boxShadow = '0 12px 32px -12px rgba(0,0,0,0.35)'
-        e.currentTarget.style.borderColor = 'var(--border-strong)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = ''
-        e.currentTarget.style.boxShadow = ''
-        e.currentTarget.style.borderColor = ''
-      }}
-    >
-      {/* Top row: icon left, three-dots right */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: iconBg, display: 'grid', placeItems: 'center', flexShrink: 0,
-        }}>
-          <Icon size={16} style={{ color: iconColor }} />
-        </div>
-        <div style={{ display: 'flex', gap: 3, paddingTop: 5 }}>
-          {[0, 1, 2].map(i => (
-            <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-faint)' }} />
-          ))}
-        </div>
-      </div>
-      {/* Label */}
-      <p style={{
-        fontSize: 10.5, fontWeight: 600, color: 'var(--text-dim)',
-        textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8,
-      }}>{label}</p>
-      {/* Value */}
-      <p style={{
-        fontSize: 28, fontWeight: 800, color: '#ffffff',
-        letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'var(--font-sans)',
-      }}>{value}</p>
-    </div>
-  )
-}
 
 function JobCard({ job, invoice, onClick }) {
   const isOpen = job.status === 'open'
@@ -234,34 +184,10 @@ export default function ReceptionistDashboard() {
   })
 
   const statsConfig = [
-    {
-      label: 'Active Jobs',
-      value: openJobs.length,
-      icon: Clock,
-      iconBg: 'rgba(var(--accent-glow)/0.12)',
-      iconColor: 'var(--accent-400)',
-    },
-    {
-      label: 'Done Today',
-      value: completedToday.length,
-      icon: CheckCircle2,
-      iconBg: 'rgba(52,211,153,0.12)',
-      iconColor: '#34d399',
-    },
-    {
-      label: "Today's Revenue",
-      value: formatAED(todayRevenue),
-      icon: Banknote,
-      iconBg: 'rgba(251,191,36,0.12)',
-      iconColor: '#fbbf24',
-    },
-    {
-      label: 'Pending Payment',
-      value: pendingPayment,
-      icon: AlertCircle,
-      iconBg: 'rgba(245,158,11,0.12)',
-      iconColor: '#f59e0b',
-    },
+    { label: 'Active Jobs',      value: openJobs.length },
+    { label: 'Done Today',       value: completedToday.length },
+    { label: "Today's Revenue",  value: formatAED(todayRevenue) },
+    { label: 'Pending Payment',  value: pendingPayment },
   ]
 
   return (
@@ -297,8 +223,14 @@ export default function ReceptionistDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="stats-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-        {statsConfig.map(s => <StatCard key={s.label} {...s} />)}
+      <div className="kpi-strip">
+        {statsConfig.flatMap((s, i) => [
+          ...(i > 0 ? [<div key={`d${i}`} className="kpi-div" />] : []),
+          <div key={s.label} className="kpi-item">
+            <span className="kpi-label">{s.label}</span>
+            <span className="kpi-value">{s.value}</span>
+          </div>,
+        ])}
       </div>
 
       {/* Filter bar */}

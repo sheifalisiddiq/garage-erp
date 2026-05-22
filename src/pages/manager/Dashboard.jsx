@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext'
 import { formatAED, formatElapsed, formatTime, isToday } from '../../lib/utils'
 import {
   RefreshCw, Plus, ArrowUpRight,
-  Clock, Wrench
 } from 'lucide-react'
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -238,7 +237,7 @@ function PerformanceChart({ chartData }) {
 }
 
 /* ── Hero Revenue card ───────────────────────────────────── */
-function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendingInvoices, revenueYesterday }) {
+function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenueYesterday }) {
   const { whole, cents } = fmtRevenue(revenueToday)
 
   const revDelta = revenueYesterday > 0
@@ -248,16 +247,10 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendin
   const bayUtil = Math.min(100, Math.round((Math.min(openJobs, 3) / 3) * 100))
 
   const stats = [
-    { label: 'Active Jobs',     value: String(openJobs),
-      dot: 'var(--info)',   dotBg: 'var(--info-soft)' },
-    { label: 'Avg. Ticket',
-      value: avgTicket > 0 ? `$${Math.round(avgTicket).toLocaleString()}` : '—',
-      dot: 'var(--ok)',     dotBg: 'var(--ok-soft)' },
-    { label: 'Pending Invoice',
-      value: revenuePending > 0 ? `$${(revenuePending / 1000).toFixed(1)}K` : '$0',
-      dot: 'var(--warn)',   dotBg: 'var(--warn-soft)' },
-    { label: 'Bay Utilization', value: `${bayUtil}%`,
-      dot: 'var(--accent-400)', dotBg: 'rgba(var(--accent-glow)/0.12)' },
+    { label: 'Active Jobs',     value: String(openJobs) },
+    { label: 'Avg. Ticket',     value: avgTicket > 0 ? `AED ${Math.round(avgTicket).toLocaleString()}` : '—' },
+    { label: 'Pending Invoice', value: revenuePending > 0 ? `AED ${(revenuePending / 1000).toFixed(1)}K` : '—' },
+    { label: 'Bay Utilization', value: `${bayUtil}%` },
   ]
 
   return (
@@ -270,12 +263,12 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendin
       {/* Hero number */}
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, margin: '4px 0 10px' }}>
         <span style={{
-          fontSize: 20, fontWeight: 700, color: 'var(--text-muted)',
-          fontFamily: 'var(--font-sans)', paddingBottom: 9,
-        }}>$</span>
+          fontSize: 14, fontWeight: 600, color: 'var(--text-dim)',
+          fontFamily: 'var(--font-sans)', paddingBottom: 11, letterSpacing: '0.02em',
+        }}>AED</span>
         <span style={{
           fontSize: 54, fontWeight: 800, letterSpacing: '-0.045em',
-          color: '#ffffff', lineHeight: 1, fontFamily: 'var(--font-sans)',
+          color: 'var(--text)', lineHeight: 1, fontFamily: 'var(--font-sans)',
         }}>{whole}</span>
         <span style={{
           fontSize: 27, fontWeight: 600, color: 'var(--text-muted)',
@@ -289,7 +282,7 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendin
         {revDelta !== null ? (
           <span className={'delta ' + (revDelta >= 0 ? 'up' : 'down')}>
             {revDelta >= 0 ? '↑' : '↓'}{' '}{Math.abs(revDelta).toFixed(1)}%
-            {' '}({revDeltaAbs >= 0 ? '+' : '-'}${Math.abs(Math.round(revDeltaAbs)).toLocaleString()})
+            {' '}({revDeltaAbs >= 0 ? '+' : '-'}AED {Math.abs(Math.round(revDeltaAbs)).toLocaleString()})
           </span>
         ) : (
           <span className="delta up">↑ —</span>
@@ -297,31 +290,25 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendin
         <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>· vs yesterday</span>
       </div>
 
-      {/* 4-cell stat strip */}
+      {/* stat strip */}
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-        borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 'auto',
+        borderTop: '1px solid var(--border)', marginTop: 'auto',
       }}>
-        {stats.map((s, i) => (
+        {stats.map((s, idx) => (
           <div key={s.label} style={{
-            paddingLeft: i === 0 ? 0 : 12,
-            paddingRight: i === stats.length - 1 ? 0 : 8,
-            borderLeft: i > 0 ? '1px solid var(--border)' : 'none',
-            display: 'flex', flexDirection: 'column', gap: 5,
+            padding: '14px 0 0',
+            paddingLeft: idx > 0 ? 16 : 0,
+            borderLeft: idx > 0 ? '1px solid var(--border)' : 'none',
+            display: 'flex', flexDirection: 'column', gap: 4,
           }}>
             <div style={{
-              width: 24, height: 24, borderRadius: 7,
-              background: s.dotBg, display: 'grid', placeItems: 'center', marginBottom: 2,
-            }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot }} />
-            </div>
-            <div style={{
-              fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase',
-              letterSpacing: '0.08em', color: 'var(--text-dim)',
+              fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase',
+              letterSpacing: '0.09em', color: 'var(--text-dim)',
             }}>{s.label}</div>
             <div style={{
-              fontSize: 18, fontWeight: 800, letterSpacing: '-0.025em',
-              color: '#ffffff', fontFamily: 'var(--font-sans)',
+              fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em',
+              color: 'var(--text)', fontFamily: 'var(--font-mono)',
             }}>{s.value}</div>
           </div>
         ))}
@@ -576,7 +563,7 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
               All invoices paid ✓
             </div>
           )}
-          {pendingInvoices.map((inv, i) => {
+          {pendingInvoices.map((inv) => {
             const job = inv._job
             return (
               <div key={inv.id} className="upnext-item">
@@ -844,13 +831,9 @@ export default function ManagerDashboard() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="live-badge">
-            <span className="live-dot" />
-            Live · syncing
-          </span>
           {lastUpdated && (
-            <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-              {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+              Updated at {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <button className="chip" onClick={fetchData}>
@@ -869,7 +852,6 @@ export default function ManagerDashboard() {
           openJobs={data.openJobs.length}
           avgTicket={data.avgTicket}
           revenuePending={data.revenuePending}
-          pendingInvoices={data.pendingInvoices.length}
           revenueYesterday={data.revenueYesterday}
         />
         <ActiveBays openJobs={data.openJobs} totalBays={3} />

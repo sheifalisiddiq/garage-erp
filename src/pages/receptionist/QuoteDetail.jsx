@@ -252,7 +252,7 @@ export default function QuoteDetail() {
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0 ${
                         item.item_type === 'service'
                           ? 'text-rose-400 bg-rose-400/10'
-                          : 'text-amber-400 bg-amber-400/10'
+                          : 'text-slate-400 bg-slate-400/10'
                       }`}>
                         {item.item_type === 'service' ? 'SVC' : 'PRT'}
                       </span>
@@ -278,7 +278,7 @@ export default function QuoteDetail() {
                   </div>
                   <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-white/[0.06]">
                     <span>Total</span>
-                    <span className="text-amber-400">{formatAED(quote.total_amount)}</span>
+                    <span className="text-white">{formatAED(quote.total_amount)}</span>
                   </div>
                 </div>
               </>
@@ -295,7 +295,7 @@ export default function QuoteDetail() {
                 <button
                   onClick={() => updateStatus('sent')}
                   disabled={updating}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 text-sm font-semibold transition disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-slate-300 hover:bg-white/[0.10] text-sm font-semibold transition disabled:opacity-50"
                 >
                   {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Mark as Sent

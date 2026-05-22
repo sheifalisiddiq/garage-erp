@@ -214,7 +214,7 @@ export default function QuoteList() {
                       <span className="text-xs text-slate-500">
                         {formatAED(q.subtotal)} + VAT
                       </span>
-                      <span className="text-base font-bold text-amber-400">{formatAED(q.total_amount)}</span>
+                      <span className="text-base font-bold text-slate-200">{formatAED(q.total_amount)}</span>
                     </div>
                   </div>
                 </div>

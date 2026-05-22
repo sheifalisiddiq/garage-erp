@@ -926,7 +926,7 @@ export default function JobDetail() {
                       <span>Net Amount</span>
                       <span>{formatAED(netAmount)}</span>
                     </div>
-                    <div className="flex justify-between text-amber-400/80">
+                    <div className="flex justify-between text-slate-400">
                       <span>VAT</span>
                       <span>+ {formatAED(taxTotal)}</span>
                     </div>

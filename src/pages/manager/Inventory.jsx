@@ -48,12 +48,12 @@ const PART_CATEGORIES = ['Oils & Fluids', 'Filters', 'Brakes', 'Electrical', 'En
 const UNITS = ['piece', 'set', 'pair', 'bottle', 'liter', 'box', 'kit', 'roll']
 
 const CATEGORY_COLORS = {
-  'Oils & Fluids': 'bg-amber-500/15 text-amber-400',
-  'Filters':       'bg-sky-500/15 text-sky-400',
+  'Oils & Fluids': 'bg-zinc-500/15 text-zinc-400',
+  'Filters':       'bg-zinc-500/15 text-zinc-400',
   'Brakes':        'bg-red-500/15 text-red-400',
-  'Electrical':    'bg-yellow-500/15 text-yellow-400',
-  'Engine':        'bg-orange-500/15 text-orange-400',
-  'Cooling':       'bg-cyan-500/15 text-cyan-400',
+  'Electrical':    'bg-zinc-500/15 text-zinc-400',
+  'Engine':        'bg-zinc-500/15 text-zinc-400',
+  'Cooling':       'bg-zinc-500/15 text-zinc-400',
   'Exterior':      'bg-emerald-500/15 text-emerald-400',
 }
 
@@ -202,7 +202,7 @@ function AddPartModal({ onClose, onSave, isDemo }) {
               </div>
               <div className="flex justify-between">
                 <span>Cost</span>
-                <span className="text-amber-400 font-semibold">AED {Number(cost).toFixed(2)} / {unit}</span>
+                <span className="text-slate-300 font-semibold">AED {Number(cost).toFixed(2)} / {unit}</span>
               </div>
               <div className="flex justify-between">
                 <span>Opening stock</span>
@@ -528,7 +528,7 @@ export default function Inventory() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={Package}       label="Total Parts"  value={totalParts}           sub="in catalogue"                   accent="bg-brand-500/15 text-brand-400" />
         <StatCard icon={AlertTriangle} label="Low Stock"    value={lowStockCount}         sub={`below ${LOW_STOCK_THRESHOLD} units`} accent={lowStockCount > 0 ? 'bg-red-500/15 text-red-400' : 'bg-emerald-500/15 text-emerald-400'} />
-        <StatCard icon={TrendingUp}    label="Stock Value"  value={formatAED(totalValue)} sub="at cost price"                  accent="bg-amber-500/15 text-amber-400" />
+        <StatCard icon={TrendingUp}    label="Stock Value"  value={formatAED(totalValue)} sub="at cost price"                  accent="bg-zinc-500/15 text-zinc-400" />
       </div>
 
       {/* Search + low-stock filter */}

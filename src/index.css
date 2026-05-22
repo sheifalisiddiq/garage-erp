@@ -343,8 +343,8 @@ button { font-family: inherit; cursor: pointer; }
 .profile-chip:hover { background: var(--card-elev); }
 .avatar {
   width: 32px; height: 32px; border-radius: 999px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  display: grid; place-items: center; color: white; font-weight: 700; font-size: 12px;
+  background: var(--text);
+  display: grid; place-items: center; color: var(--bg); font-weight: 700; font-size: 12px;
   flex-shrink: 0;
 }
 .avatar.sm { width: 30px; height: 30px; }
@@ -599,32 +599,6 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(var(--accent-glow)/0.08);
 }
 
-/* ── Live badge ──────────────────────────────────────── */
-.live-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 600; color: var(--ok);
-  background: var(--ok-soft); border: 1px solid rgba(52,211,153,0.2);
-  border-radius: 999px; padding: 3px 10px;
-}
-:root[data-theme="light"] .live-badge {
-  background: rgba(22,163,74,0.08);
-  border-color: rgba(22,163,74,0.2);
-  color: #16a34a;
-}
-.live-dot {
-  width: 5px; height: 5px; border-radius: 999px; background: var(--ok);
-  animation: ps-pulse 1.8s ease-out infinite;
-}
-@keyframes ps-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
-  100% { box-shadow: 0 0 0 7px rgba(52,211,153,0); }
-}
-:root[data-theme="light"] .live-dot { animation-name: ps-pulse-light; }
-@keyframes ps-pulse-light {
-  0%   { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
-  100% { box-shadow: 0 0 0 7px rgba(22,163,74,0); }
-}
-
 /* ── Divider ─────────────────────────────────────────── */
 .divider-thin { height: 1px; background: var(--border); margin: 4px 2px; }
 
@@ -875,7 +849,6 @@ option:checked { background-color: rgba(var(--accent-glow) / 0.15); color: var(-
   border-color: rgba(0,212,169,0.10);
 }
 
-:root[data-theme="dark"]:not([data-accent="monochrome"]) .kpi-strip,
 :root[data-theme="dark"]:not([data-accent="monochrome"]) .panel {
   background: rgba(10,20,35,0.80);
   backdrop-filter: blur(24px) saturate(140%);
@@ -979,7 +952,6 @@ option:checked { background-color: rgba(var(--accent-glow) / 0.15); color: var(-
   border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 :root[data-theme="dark"][data-accent="monochrome"] .card,
-:root[data-theme="dark"][data-accent="monochrome"] .kpi-strip,
 :root[data-theme="dark"][data-accent="monochrome"] .panel,
 :root[data-theme="dark"][data-accent="monochrome"] .bay {
   background: #09090b !important;

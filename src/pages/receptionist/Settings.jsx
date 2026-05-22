@@ -248,7 +248,7 @@ const CAT_COLORS = {
   Electrical: 'bg-yellow-500/15 text-yellow-400',
   Exterior: 'bg-emerald-500/15 text-emerald-400',
   Drivetrain: 'bg-purple-500/15 text-purple-400',
-  'Oils & Fluids': 'bg-amber-500/15 text-amber-400',
+  'Oils & Fluids': 'bg-zinc-500/15 text-zinc-400',
   Other: 'bg-slate-500/15 text-slate-400',
 }
 
@@ -378,7 +378,7 @@ function CatalogueTab() {
                   <span className={`w-28 text-center text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider hidden sm:inline-block ${CAT_COLORS[item.category] || CAT_COLORS.Other}`}>
                     {item.category}
                   </span>
-                  <p className="w-28 text-right text-sm font-semibold text-amber-400">
+                  <p className="w-28 text-right text-sm font-semibold text-slate-200">
                     {Number(item.price).toFixed(2)}
                   </p>
                   <div className="w-20 flex justify-end gap-2">

@@ -316,7 +316,7 @@ export default function NewQuote() {
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0 ${
                     item.item_type === 'service'
                       ? 'text-rose-400 bg-rose-400/10'
-                      : 'text-amber-400 bg-amber-400/10'
+                      : 'text-slate-400 bg-slate-400/10'
                   }`}>
                     {item.item_type === 'service' ? 'SVC' : 'PRT'}
                   </span>
@@ -385,7 +385,7 @@ export default function NewQuote() {
               <button
                 onClick={addPart}
                 disabled={!selPart}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-600/80 hover:bg-amber-600 text-white text-sm font-semibold transition disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-slate-200 text-sm font-semibold transition disabled:opacity-40"
               >
                 <PlusCircle className="w-4 h-4" />
               </button>
@@ -469,7 +469,7 @@ export default function NewQuote() {
           </div>
           <div className="flex justify-between text-white font-bold text-base pt-2 border-t border-white/[0.06]">
             <span>Total</span>
-            <span className="text-amber-400">{formatAED(totalAmount)}</span>
+            <span className="text-white">{formatAED(totalAmount)}</span>
           </div>
         </div>
       </div>
