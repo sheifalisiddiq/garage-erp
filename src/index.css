@@ -766,6 +766,31 @@ button { font-family: inherit; cursor: pointer; }
 [data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(30,25,15,0.12); }
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(30,25,15,0.2); }
 
+/* ── Monochrome Contrast Polish in Dark Mode ── */
+:root[data-accent="monochrome"]:not([data-theme="light"]) .chip.is-active,
+:root[data-accent="monochrome"]:not([data-theme="light"]) button[class*="bg-brand-6"],
+:root[data-accent="monochrome"]:not([data-theme="light"]) button[class*="bg-brand-7"],
+:root[data-accent="monochrome"]:not([data-theme="light"]) button[class*="bg-brand-5"],
+:root[data-accent="monochrome"]:not([data-theme="light"]) a[class*="bg-brand-6"],
+:root[data-accent="monochrome"]:not([data-theme="light"]) a[class*="bg-brand-7"],
+:root[data-accent="monochrome"]:not([data-theme="light"]) a[class*="bg-brand-5"],
+:root[data-accent="monochrome"]:not([data-theme="light"]) .btn-primary {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+:root[data-accent="monochrome"]:not([data-theme="light"]) .chip.is-active svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) button[class*="bg-brand-6"] svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) button[class*="bg-brand-7"] svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) button[class*="bg-brand-5"] svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) a[class*="bg-brand-6"] svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) a[class*="bg-brand-7"] svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) a[class*="bg-brand-5"] svg,
+:root[data-accent="monochrome"]:not([data-theme="light"]) .btn-primary svg {
+  color: #000000 !important;
+}
+
 /* ── Form input base ──────────────────────────────────── */
 .form-input {
   width: 100%;

@@ -165,13 +165,13 @@ function PerformanceChart({ chartData }) {
         <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="var(--accent-500)" stopOpacity="0.32" />
-              <stop offset="60%"  stopColor="var(--accent-500)" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="var(--accent-500)" stopOpacity="0" />
+              <stop offset="0%"   stopColor="#e11d48" stopOpacity="0.32" />
+              <stop offset="60%"  stopColor="#e11d48" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#e11d48" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%"   stopColor="var(--accent-400)" />
-              <stop offset="100%" stopColor="var(--accent-500)" />
+              <stop offset="0%"   stopColor="#fb7185" />
+              <stop offset="100%" stopColor="#e11d48" />
             </linearGradient>
           </defs>
 
@@ -202,9 +202,9 @@ function PerformanceChart({ chartData }) {
           {pts.length > 0 && (
             <>
               <line x1={pt.x} y1={P.t} x2={pt.x} y2={P.t + innerH}
-                stroke="var(--accent-500)" strokeDasharray="4 4" strokeWidth="1" opacity="0.6" />
-              <circle cx={pt.x} cy={pt.y} r="9" fill="var(--accent-500)" fillOpacity="0.2" />
-              <circle cx={pt.x} cy={pt.y} r="5" fill="var(--accent-500)"
+                stroke="#e11d48" strokeDasharray="4 4" strokeWidth="1" opacity="0.6" />
+              <circle cx={pt.x} cy={pt.y} r="9" fill="#e11d48" fillOpacity="0.2" />
+              <circle cx={pt.x} cy={pt.y} r="5" fill="#e11d48"
                 stroke="var(--card)" strokeWidth="2.5" />
             </>
           )}
@@ -271,15 +271,15 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendin
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, margin: '4px 0 10px' }}>
         <span style={{
           fontSize: 20, fontWeight: 700, color: 'var(--text-muted)',
-          fontFamily: 'var(--font-mono)', paddingBottom: 9,
+          fontFamily: 'var(--font-sans)', paddingBottom: 9,
         }}>$</span>
         <span style={{
           fontSize: 54, fontWeight: 800, letterSpacing: '-0.045em',
-          color: 'var(--text)', lineHeight: 1, fontFamily: 'var(--font-mono)',
+          color: '#ffffff', lineHeight: 1, fontFamily: 'var(--font-sans)',
         }}>{whole}</span>
         <span style={{
           fontSize: 27, fontWeight: 600, color: 'var(--text-muted)',
-          fontFamily: 'var(--font-mono)', paddingBottom: 5,
+          fontFamily: 'var(--font-sans)', paddingBottom: 5,
         }}>.{cents}</span>
       </div>
 
@@ -320,8 +320,8 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, pendin
               letterSpacing: '0.08em', color: 'var(--text-dim)',
             }}>{s.label}</div>
             <div style={{
-              fontSize: 18, fontWeight: 700, letterSpacing: '-0.025em',
-              color: 'var(--text)', fontFamily: 'var(--font-mono)',
+              fontSize: 18, fontWeight: 800, letterSpacing: '-0.025em',
+              color: '#ffffff', fontFamily: 'var(--font-sans)',
             }}>{s.value}</div>
           </div>
         ))}

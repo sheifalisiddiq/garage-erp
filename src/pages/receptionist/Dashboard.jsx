@@ -62,8 +62,8 @@ function StatCard({ label, value, icon: Icon, iconBg, iconColor }) {
       }}>{label}</p>
       {/* Value */}
       <p style={{
-        fontSize: 28, fontWeight: 700, color: 'var(--text)',
-        letterSpacing: '-0.03em', lineHeight: 1, fontFamily: 'var(--font-mono)',
+        fontSize: 28, fontWeight: 800, color: '#ffffff',
+        letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'var(--font-sans)',
       }}>{value}</p>
     </div>
   )
