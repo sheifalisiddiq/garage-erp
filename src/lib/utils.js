@@ -130,3 +130,7 @@ export function vatRateLabel(vatRate) {
   if (vatRate === -1) return 'Exempt'
   return `${vatRate}%`
 }
+
+export function normalizePhone(phone) {
+  return (phone || '').replace(/[\s\-().]/g, '')
+}

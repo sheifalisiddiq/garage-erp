@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { formatAED } from '../../lib/utils'
+import { formatAED, normalizePhone } from '../../lib/utils'
 import {
   ArrowLeft, User, Car, Wrench, Package, ClipboardList,
-  Search, Trash2, Loader2, ChevronDown, PlusCircle
+  Search, Trash2, Loader2, ChevronDown, PlusCircle, Mail
 } from 'lucide-react'
 
 const inputCls = 'w-full bg-surface-600 border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-500 transition'
@@ -44,6 +44,7 @@ export default function NewQuote() {
   // Customer section
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('+971')
+  const [customerEmail, setCustomerEmail] = useState('')
   const [lookupLoading, setLookupLoading] = useState(false)
   const [lookupMsg, setLookupMsg] = useState('')
 
@@ -77,11 +78,12 @@ export default function NewQuote() {
     const { data } = await supabase
       .from('customers')
       .select('*, vehicles(*)')
-      .eq('phone', customerPhone)
+      .eq('phone', normalizePhone(customerPhone))
       .maybeSingle()
 
     if (data) {
       setCustomerName(data.name)
+      if (data.email) setCustomerEmail(data.email)
       setExistingVehicles(data.vehicles || [])
       setLookupMsg(`Found: ${data.name}`)
     } else {
@@ -169,7 +171,8 @@ export default function NewQuote() {
       const { data: quote, error: qErr } = await supabase.from('quotations').insert({
         quote_number:   qn,
         customer_name:  customerName.trim(),
-        customer_phone: customerPhone.trim(),
+        customer_phone: normalizePhone(customerPhone),
+        customer_email: customerEmail.trim() || null,
         vehicle_info:   vehicleInfo.trim(),
         status,
         valid_days:     validDays,
@@ -256,6 +259,18 @@ export default function NewQuote() {
               className={inputCls}
             />
             {errors.customerName && <p className="text-red-400 text-xs mt-1">{errors.customerName}</p>}
+          </div>
+          <div>
+            <label className={labelCls}>
+              <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-slate-500" /> Email (for sending quote)</span>
+            </label>
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={e => setCustomerEmail(e.target.value)}
+              placeholder="customer@email.com"
+              className={inputCls}
+            />
           </div>
         </div>
       </Section>

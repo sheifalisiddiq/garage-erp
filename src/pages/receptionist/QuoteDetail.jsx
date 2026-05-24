@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { formatAED, formatDate, formatDateTime, quoteStatusColor } from '../../lib/utils'
 import {
   ArrowLeft, Printer, CheckCircle2, Send, Clock,
-  XCircle, Wrench, Loader2, FileText, FileDown
+  XCircle, Wrench, Loader2, FileText, FileDown, Mail
 } from 'lucide-react'
 
 function Section({ title, icon: Icon, children }) {
@@ -39,6 +39,7 @@ export default function QuoteDetail() {
   const [loading, setLoading]     = useState(true)
   const [updating, setUpdating]   = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   const tpl = (() => {
     try { return JSON.parse(localStorage.getItem('pitstop_template') || 'null') } catch { return null }
@@ -131,6 +132,84 @@ export default function QuoteDetail() {
     }
   }
 
+  const handleSendEmail = async () => {
+    if (!quote.customer_email) {
+      alert('No email address on file for this customer. Please recreate the quote with an email address.')
+      return
+    }
+    const printEl = document.getElementById('pdf-print-area')
+    if (!printEl) return
+    setSendingEmail(true)
+
+    const prev = {
+      position: printEl.style.position,
+      top:      printEl.style.top,
+      left:     printEl.style.left,
+      display:  printEl.style.display,
+      width:    printEl.style.width,
+    }
+    printEl.style.position = 'fixed'
+    printEl.style.top      = '0'
+    printEl.style.left     = '-9999px'
+    printEl.style.display  = 'block'
+    printEl.style.width    = '794px'
+
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      const canvas = await html2canvas(printEl, {
+        scale:           2,
+        useCORS:         true,
+        logging:         false,
+        backgroundColor: '#ffffff',
+      })
+
+      const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pageW   = pdf.internal.pageSize.getWidth()
+      const pageH   = pdf.internal.pageSize.getHeight()
+      const imgH    = (canvas.height * pageW) / canvas.width
+      const imgData = canvas.toDataURL('image/png')
+
+      let remaining = imgH
+      let offset    = 0
+      pdf.addImage(imgData, 'PNG', 0, offset, pageW, imgH)
+      remaining -= pageH
+
+      while (remaining > 0) {
+        offset -= pageH
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, offset, pageW, imgH)
+        remaining -= pageH
+      }
+
+      const pdfBase64 = pdf.output('datauristring').split(',')[1]
+
+      const quoteHtml = printEl.innerHTML
+
+      const { error } = await supabase.functions.invoke('send-quotation', {
+        body: {
+          to:           quote.customer_email,
+          quoteHtml,
+          quoteNumber:  quote.quote_number,
+          totalAmount:  quote.total_amount,
+          customerName: quote.customer_name,
+          pdfBase64,
+        },
+      })
+
+      if (error) throw new Error(error.message || 'Failed to send email')
+      alert(`Quote emailed successfully to ${quote.customer_email}`)
+    } catch (err) {
+      alert('Error sending email: ' + err.message)
+    } finally {
+      Object.assign(printEl.style, prev)
+      setSendingEmail(false)
+    }
+  }
+
   const basePath = isReceptionist ? '/receptionist/quotes' : '/manager/quotes'
 
   if (loading) {
@@ -182,7 +261,7 @@ export default function QuoteDetail() {
             <button
               onClick={handlePDF}
               disabled={downloading}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition disabled:opacity-60"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-600 border border-white/[0.06] text-slate-300 hover:text-white text-sm font-medium transition disabled:opacity-60"
               title="Download PDF"
             >
               {downloading
@@ -191,6 +270,20 @@ export default function QuoteDetail() {
               }
               <span className="hidden sm:inline">{downloading ? 'Generating…' : 'Download PDF'}</span>
             </button>
+            {isReceptionist && (
+              <button
+                onClick={handleSendEmail}
+                disabled={sendingEmail || !quote.customer_email}
+                title={quote.customer_email ? `Send to ${quote.customer_email}` : 'No email on file'}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition disabled:opacity-40"
+              >
+                {sendingEmail
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Mail className="w-4 h-4" />
+                }
+                <span className="hidden sm:inline">{sendingEmail ? 'Sending…' : 'Send Email'}</span>
+              </button>
+            )}
           </div>
         </div>
 

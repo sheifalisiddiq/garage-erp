@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { ArrowLeft, User, Phone, Mail, Car, Wrench, FileText, Loader2, ChevronDown } from 'lucide-react'
+import { normalizePhone } from '../../lib/utils'
 
 const MAKES = ['Toyota', 'Nissan', 'Honda', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Ford', 'Chevrolet', 'Mitsubishi', 'Lexus', 'Infiniti', 'Land Rover', 'Jeep', 'Audi', 'Volkswagen', 'Other']
 
@@ -81,11 +82,12 @@ export default function NewJob() {
 
     try {
       // 1. Upsert customer (by phone)
+      const normalizedPhone = normalizePhone(form.customerPhone)
       let customerId
       const { data: existing } = await supabase
         .from('customers')
         .select('id')
-        .eq('phone', form.customerPhone)
+        .eq('phone', normalizedPhone)
         .maybeSingle()
 
       if (existing) {
@@ -93,7 +95,7 @@ export default function NewJob() {
       } else {
         const { data: newCust, error: custErr } = await supabase
           .from('customers')
-          .insert({ name: form.customerName, phone: form.customerPhone, email: form.customerEmail || null })
+          .insert({ name: form.customerName, phone: normalizedPhone, email: form.customerEmail || null })
           .select('id')
           .single()
         if (custErr) throw custErr

@@ -290,3 +290,6 @@ ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS vat_rate NUMERIC(5,2) DEFAULT 0.0
 ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS vat_amount NUMERIC(10,2) DEFAULT 0.00;
 ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS line_total NUMERIC(10,2);
 ALTER TABLE job_parts ADD COLUMN IF NOT EXISTS unit_code TEXT DEFAULT 'EA';
+
+-- quotations: customer email for sending quotes
+ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_email TEXT;
