@@ -15,7 +15,7 @@ function LiveTimer({ createdAt }) {
     const t = setInterval(() => setSecs(elapsedSeconds(createdAt)), 1000)
     return () => clearInterval(t)
   }, [createdAt])
-  return <span className="font-mono" style={{ color: 'var(--accent-400)', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }}>{formatElapsed(secs)}</span>
+  return <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent-400)' }}>{formatElapsed(secs)}</span>
 }
 
 
@@ -104,7 +104,7 @@ function JobCard({ job, invoice, onClick }) {
                 <LiveTimer createdAt={job.created_at} />
               </div>
             ) : invoice ? (
-              <span style={{ fontSize: 14, fontWeight: 600, color: invoice.status === 'paid' ? 'var(--ok)' : 'var(--danger)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{formatAED(invoice.total_amount)}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: invoice.status === 'paid' ? 'var(--ok)' : 'var(--danger)' }}>{formatAED(invoice.total_amount)}</span>
             ) : null}
             <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{formatTime(job.created_at)}</span>
             <ChevronRight size={15} style={{ color: 'var(--text-faint)', transition: 'color 160ms ease, transform 160ms ease' }}

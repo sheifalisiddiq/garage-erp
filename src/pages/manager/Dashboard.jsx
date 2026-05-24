@@ -204,13 +204,13 @@ function PerformanceChart({ chartData }) {
         <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   style={{ stopColor: 'var(--accent-500)', stopOpacity: 0.28 }} />
-              <stop offset="55%"  style={{ stopColor: 'var(--accent-500)', stopOpacity: 0.07 }} />
-              <stop offset="100%" style={{ stopColor: 'var(--accent-500)', stopOpacity: 0 }} />
+              <stop offset="0%"   stopColor="#e11d48" stopOpacity="0.32" />
+              <stop offset="60%"  stopColor="#e11d48" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#e11d48" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%"   style={{ stopColor: 'var(--accent-400)', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: 'var(--accent-600)', stopOpacity: 1 }} />
+              <stop offset="0%"   stopColor="#fb7185" />
+              <stop offset="100%" stopColor="#e11d48" />
             </linearGradient>
           </defs>
 
@@ -241,9 +241,9 @@ function PerformanceChart({ chartData }) {
           {pts.length > 0 && (
             <>
               <line x1={pt.x} y1={P.t} x2={pt.x} y2={P.t + innerH}
-                stroke="var(--accent-500)" strokeDasharray="4 4" strokeWidth="1" opacity="0.5" />
-              <circle cx={pt.x} cy={pt.y} r="9" fill="var(--accent-500)" fillOpacity="0.18" />
-              <circle cx={pt.x} cy={pt.y} r="4.5" fill="var(--accent-500)"
+                stroke="#e11d48" strokeDasharray="4 4" strokeWidth="1" opacity="0.6" />
+              <circle cx={pt.x} cy={pt.y} r="9" fill="#e11d48" fillOpacity="0.2" />
+              <circle cx={pt.x} cy={pt.y} r="5" fill="#e11d48"
                 stroke="var(--card)" strokeWidth="2.5" />
             </>
           )}
@@ -253,11 +253,11 @@ function PerformanceChart({ chartData }) {
           <div className="chart-tooltip"
             style={{ left: `calc(${tipLeft}% - 70px)`, top: `calc(${tipTop}% - 70px)` }}>
             <div className="chart-tooltip-label">{pt.label}</div>
-            <div className="chart-tooltip-value mono" style={{ fontFeatureSettings: '"tnum"', fontVariantNumeric: 'tabular-nums' }}>
+            <div className="chart-tooltip-value mono">
               AED {pt.v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}
               <span className={'delta ' + (Number(pctChange) >= 0 ? 'up' : 'down')}
-                style={{ fontSize: 10, fontFamily: 'var(--font-mono)' }}>
-                {Number(pctChange) >= 0 ? '+' : ''}{Number(pctChange).toFixed(1)}%
+                style={{ fontSize: 10 }}>
+                {Number(pctChange) >= 0 ? '↑' : '↓'}{Math.abs(Number(pctChange))}%
               </span>
             </div>
           </div>
@@ -301,21 +301,18 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenu
       </div>
 
       {/* Hero number */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, margin: '4px 0 10px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, margin: '4px 0 10px' }}>
         <span style={{
-          fontSize: 12, fontWeight: 600, color: 'var(--text-dim)',
-          fontFamily: 'var(--font-mono)', paddingBottom: 9, letterSpacing: '0.06em',
-          textTransform: 'uppercase',
+          fontSize: 14, fontWeight: 600, color: 'var(--text-dim)',
+          fontFamily: 'var(--font-sans)', paddingBottom: 11, letterSpacing: '0.02em',
         }}>AED</span>
         <span style={{
-          fontSize: 52, fontWeight: 600, letterSpacing: '-0.015em',
-          color: 'var(--text)', lineHeight: 1, fontFamily: 'var(--font-mono)',
-          fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"',
+          fontSize: 54, fontWeight: 800, letterSpacing: '-0.045em',
+          color: 'var(--text)', lineHeight: 1, fontFamily: 'var(--font-sans)',
         }}>{whole}</span>
         <span style={{
-          fontSize: 26, fontWeight: 500, color: 'var(--text-dim)',
-          fontFamily: 'var(--font-mono)', paddingBottom: 4,
-          fontVariantNumeric: 'tabular-nums',
+          fontSize: 27, fontWeight: 600, color: 'var(--text-muted)',
+          fontFamily: 'var(--font-sans)', paddingBottom: 5,
         }}>.{cents}</span>
       </div>
 
@@ -350,9 +347,8 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenu
               letterSpacing: '0.09em', color: 'var(--text-dim)',
             }}>{s.label}</div>
             <div style={{
-              fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em',
+              fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em',
               color: 'var(--text)', fontVariantNumeric: 'tabular-nums',
-              fontFamily: 'var(--font-mono)', fontFeatureSettings: '"tnum"',
             }}>{s.value}</div>
           </div>
         ))}
@@ -559,11 +555,8 @@ function JobsTable({ todayJobs, invoices }) {
                   style={{
                     textAlign: 'right',
                     color: amount > 0 ? (inv?.status === 'paid' ? 'var(--ok)' : 'var(--danger)') : 'var(--text-dim)',
-                    fontFamily: 'var(--font-mono)',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontFeatureSettings: '"tnum"',
-                    fontWeight: 600,
                   }}
+                  className="font-medium"
                 >
                   {amount > 0 ? formatAED(amount) : '—'}
                 </td>
@@ -620,7 +613,7 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
                   </div>
                   <div className="upnext-sub">{job?.customers?.name || '—'}</div>
                 </div>
-                <span className="upnext-tag" style={{ color: 'var(--danger)', fontWeight: 600, whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                <span className="upnext-tag" style={{ color: 'var(--danger)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {formatAED(inv.total_amount)}
                 </span>
               </div>
@@ -659,7 +652,7 @@ function PendingPanel({ pendingInvoices, mechPerf }) {
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                     {m.jobs} job{m.jobs !== 1 ? 's' : ''}
-                    {m.revenue > 0 && <span style={{ color: 'var(--ok)', marginLeft: 6, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{formatAED(m.revenue)}</span>}
+                    {m.revenue > 0 && <span style={{ color: 'var(--ok)', marginLeft: 6 }}>{formatAED(m.revenue)}</span>}
                     {m.activeJob && <span style={{ color: 'var(--info)', marginLeft: 6 }}>· {m.activeJob}</span>}
                   </div>
                 </div>
