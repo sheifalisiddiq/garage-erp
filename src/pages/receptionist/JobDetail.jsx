@@ -585,6 +585,7 @@ export default function JobDetail() {
         totalAmount: inv.total_amount,
         customerName: job.customers.name,
         pdfBase64,
+        customerPhone: job.customers?.phone ?? null,
       },
     })
     return !error

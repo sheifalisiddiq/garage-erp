@@ -5,13 +5,45 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// +971501294250 | 971501294250 | 0501294250 | 501294250  →  971501294250
+function normaliseToE164(phone: string): string | null {
+  let d = (phone || '').replace(/\D/g, '')
+  if (!d) return null
+  if (d.startsWith('0')) d = '971' + d.slice(1)
+  if (d.length === 9) d = '971' + d
+  return d
+}
+
+async function sendWhatsApp(
+  phone: string,
+  pdfBase64: string,
+  filename: string,
+  caption: string,
+): Promise<void> {
+  const url = Deno.env.get('WHATSAPP_SERVER_URL')
+  const secret = Deno.env.get('WHATSAPP_API_SECRET')
+  if (!url || !secret) return
+
+  const e164 = normaliseToE164(phone)
+  if (!e164) return
+
+  await fetch(`${url}/send-document`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${secret}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ phone: e164, pdfBase64, filename, caption }),
+  })
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { to, invoiceHtml, invoiceNumber, totalAmount, customerName, pdfBase64 } = await req.json()
+    const { to, invoiceHtml, invoiceNumber, totalAmount, customerName, pdfBase64, customerPhone } = await req.json()
 
     if (!to || !invoiceHtml) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -33,7 +65,8 @@ serve(async (req) => {
       currency: 'AED',
     }).format(Number(totalAmount || 0))
 
-    const res = await fetch('https://api.resend.com/emails', {
+    // Fire email + WhatsApp in parallel
+    const emailPromise = fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
@@ -53,6 +86,16 @@ serve(async (req) => {
       }),
     })
 
+    const waPromise = (customerPhone && pdfBase64)
+      ? sendWhatsApp(
+          customerPhone,
+          pdfBase64,
+          `Invoice-${invoiceNumber}.pdf`,
+          `Hi ${customerName || 'there'}, please find your invoice ${invoiceNumber} from Pitstop Garage attached (${formattedTotal}).`,
+        ).catch(() => {})
+      : Promise.resolve()
+
+    const [res] = await Promise.all([emailPromise, waPromise])
     const data = await res.json()
 
     if (!res.ok) {

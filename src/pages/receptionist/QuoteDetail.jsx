@@ -191,12 +191,13 @@ export default function QuoteDetail() {
 
       const { error } = await supabase.functions.invoke('send-quotation', {
         body: {
-          to:           quote.customer_email,
+          to:             quote.customer_email,
           quoteHtml,
-          quoteNumber:  quote.quote_number,
-          totalAmount:  quote.total_amount,
-          customerName: quote.customer_name,
+          quoteNumber:    quote.quote_number,
+          totalAmount:    quote.total_amount,
+          customerName:   quote.customer_name,
           pdfBase64,
+          customerPhone:  quote.customer_phone ?? null,
         },
       })
 
