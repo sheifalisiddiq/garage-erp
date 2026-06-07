@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { cn, formatAED, formatElapsed, formatTime, isToday } from '../../lib/utils'
@@ -276,19 +277,42 @@ function PerformanceChart({ chartData }) {
   )
 }
 
-/* ── Hero Revenue card ───────────────────────────────────── */
-function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenueYesterday }) {
-  const { whole, cents } = fmtRevenue(revenueToday)
+const TIME_FILTERS = ['Today', 'Week', 'Month']
 
-  const revDelta = revenueYesterday > 0
-    ? (revenueToday - revenueYesterday) / revenueYesterday * 100
+/* ── Hero Revenue card ───────────────────────────────────── */
+function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenueYesterday, allJobs, allInvoices }) {
+  const [timeFilter, setTimeFilter] = useState('Today')
+
+  const { revenue, avg } = useMemo(() => {
+    if (timeFilter === 'Today' || !allJobs || !allInvoices) {
+      return { revenue: revenueToday, avg: avgTicket }
+    }
+    const now = new Date()
+    const cutoff = timeFilter === 'Week'
+      ? new Date(now - 7 * 24 * 60 * 60 * 1000)
+      : new Date(now.getFullYear(), now.getMonth(), 1)
+    const invMap = {}
+    allInvoices.forEach(i => { invMap[i.job_id] = i })
+    const paidInPeriod = allJobs.filter(j =>
+      j.status === 'complete' &&
+      invMap[j.id]?.status === 'paid' &&
+      new Date(invMap[j.id].created_at) >= cutoff
+    )
+    const rev = paidInPeriod.reduce((s, j) => s + Number(invMap[j.id]?.total_amount || 0), 0)
+    return { revenue: rev, avg: paidInPeriod.length > 0 ? rev / paidInPeriod.length : 0 }
+  }, [timeFilter, allJobs, allInvoices, revenueToday, avgTicket])
+
+  const { whole, cents } = fmtRevenue(revenue)
+
+  const revDelta = timeFilter === 'Today' && revenueYesterday > 0
+    ? (revenue - revenueYesterday) / revenueYesterday * 100
     : null
-  const revDeltaAbs = revenueToday - revenueYesterday
+  const revDeltaAbs = timeFilter === 'Today' ? revenue - revenueYesterday : null
   const bayUtil = Math.min(100, Math.round((Math.min(openJobs, 3) / 3) * 100))
 
   const stats = [
     { label: 'Active Jobs',     value: String(openJobs) },
-    { label: 'Avg. Ticket',     value: avgTicket > 0 ? `AED ${Math.round(avgTicket).toLocaleString()}` : '—' },
+    { label: 'Avg. Ticket',     value: avg > 0 ? `AED ${Math.round(avg).toLocaleString()}` : '—' },
     { label: 'Pending Invoice', value: revenuePending > 0 ? `AED ${(revenuePending / 1000).toFixed(1)}K` : '—' },
     { label: 'Bay Utilization', value: `${bayUtil}%` },
   ]
@@ -296,8 +320,14 @@ function HeroRevenue({ revenueToday, openJobs, avgTicket, revenuePending, revenu
   return (
     <section className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="card-head" style={{ marginBottom: 14 }}>
-        <div className="card-title">Today's Revenue</div>
-        <button className="chip" style={{ fontSize: 11 }}>Today <span style={{ fontSize: 9 }}>▾</span></button>
+        <div className="card-title">{timeFilter === 'Today' ? "Today's" : timeFilter === 'Week' ? "This Week's" : "This Month's"} Revenue</div>
+        <button
+          className="chip"
+          style={{ fontSize: 11 }}
+          onClick={() => setTimeFilter(f => TIME_FILTERS[(TIME_FILTERS.indexOf(f) + 1) % TIME_FILTERS.length])}
+        >
+          {timeFilter} <span style={{ fontSize: 9 }}>▾</span>
+        </button>
       </div>
 
       {/* Hero number */}
@@ -409,6 +439,7 @@ function FreeBay({ idx }) {
 }
 
 function ActiveBays({ openJobs, totalBays = 3 }) {
+  const navigate = useNavigate()
   const bays = openJobs.slice(0, totalBays).map(job => ({
     vehicle: `${job.vehicles?.make || ''} ${job.vehicles?.model || ''}`.trim() || 'Unknown Vehicle',
     year:    job.vehicles?.year || '—',
@@ -434,8 +465,8 @@ function ActiveBays({ openJobs, totalBays = 3 }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button className="chip"><Plus size={12} /> Assign job</button>
-          <button className="chip">See all <ArrowUpRight size={12} /></button>
+          <button className="chip" onClick={() => navigate('/receptionist/new-job')}><Plus size={12} /> Assign job</button>
+          <button className="chip" onClick={() => navigate('/manager/jobs')}>See all <ArrowUpRight size={12} /></button>
         </div>
       </div>
 
@@ -751,6 +782,8 @@ export default function ManagerDashboard() {
   const { user } = useAuth()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
+  const [rawJobs, setRawJobs] = useState([])
+  const [rawInvoices, setRawInvoices] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
 
   const fetchData = useCallback(async () => {
@@ -776,6 +809,8 @@ export default function ManagerDashboard() {
     const jobs      = jobsRes.data     || []
     const invoices  = invoicesRes.data || []
     const mechanics = mechanicsRes.data || []
+    setRawJobs(jobs)
+    setRawInvoices(invoices)
 
     const invMap = {}
     invoices.forEach(inv => { invMap[inv.job_id] = inv })
@@ -884,6 +919,8 @@ export default function ManagerDashboard() {
           avgTicket={data.avgTicket}
           revenuePending={data.revenuePending}
           revenueYesterday={data.revenueYesterday}
+          allJobs={rawJobs}
+          allInvoices={rawInvoices}
         />
         <ActiveBays openJobs={data.openJobs} totalBays={3} />
       </div>

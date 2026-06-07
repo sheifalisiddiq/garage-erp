@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { ArrowLeft, User, Phone, Mail, Car, Wrench, FileText, Loader2, ChevronDown } from 'lucide-react'
 import { normalizePhone } from '../../lib/utils'
+import ImageScanButton from '../../components/ImageScanButton'
+import VoiceInputButton from '../../components/VoiceInputButton'
 
 const MAKES = ['Toyota', 'Nissan', 'Honda', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Ford', 'Chevrolet', 'Mitsubishi', 'Lexus', 'Infiniti', 'Land Rover', 'Jeep', 'Audi', 'Volkswagen', 'Other']
 
@@ -153,18 +155,32 @@ export default function NewJob() {
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 className="text-2xl font-bold text-white">Create New Job</h1>
           <p className="text-slate-400 text-sm">Timer starts when job is created</p>
         </div>
+        <VoiceInputButton
+          onResult={(fields) => setForm(f => ({ ...f, ...fields }))}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Customer section */}
         <div className="bg-surface-700 border border-white/[0.06] rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-brand-400" /> Customer Details
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <User className="w-4 h-4 text-brand-400" /> Customer Details
+            </h2>
+            <ImageScanButton
+              scanType="card"
+              title="Scan business card to auto-fill"
+              onResult={(data) => {
+                if (data.customerName) setForm(f => ({ ...f, customerName: data.customerName }))
+                if (data.customerPhone) setForm(f => ({ ...f, customerPhone: data.customerPhone }))
+                if (data.customerEmail) setForm(f => ({ ...f, customerEmail: data.customerEmail }))
+              }}
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Full Name *" icon={User} error={errors.customerName}>
               <input className={inputCls} placeholder="Ahmed Al-Rashid" value={form.customerName} onChange={set('customerName')} />
@@ -180,9 +196,21 @@ export default function NewJob() {
 
         {/* Vehicle section */}
         <div className="bg-surface-700 border border-white/[0.06] rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Car className="w-4 h-4 text-brand-400" /> Vehicle Details
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              <Car className="w-4 h-4 text-brand-400" /> Vehicle Details
+            </h2>
+            <ImageScanButton
+              scanType="plate"
+              title="Scan license plate to auto-fill"
+              onResult={(data) => {
+                if (data.licensePlate) setForm(f => ({ ...f, licensePlate: data.licensePlate }))
+                if (data.vehicleMake) setForm(f => ({ ...f, vehicleMake: data.vehicleMake }))
+                if (data.vehicleModel) setForm(f => ({ ...f, vehicleModel: data.vehicleModel }))
+                if (data.vehicleYear) setForm(f => ({ ...f, vehicleYear: data.vehicleYear }))
+              }}
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Make *" error={errors.vehicleMake}>
               <div className="relative">

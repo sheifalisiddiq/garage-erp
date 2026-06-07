@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useSearch } from '../../context/SearchContext'
 import { formatAED, formatDateTime, statusColor } from '../../lib/utils'
 import { Receipt, Loader2, ChevronRight } from 'lucide-react'
 
 export default function InvoiceList() {
   const navigate = useNavigate()
+  const { search } = useSearch()
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -17,6 +19,17 @@ export default function InvoiceList() {
       .then(({ data }) => { setInvoices(data || []); setLoading(false) })
   }, [])
 
+  const q = search.toLowerCase()
+  const filtered = q
+    ? invoices.filter(inv =>
+        inv.invoice_number?.toLowerCase().includes(q) ||
+        inv.jobs?.job_number?.toLowerCase().includes(q) ||
+        inv.jobs?.customers?.name?.toLowerCase().includes(q) ||
+        inv.jobs?.vehicles?.make?.toLowerCase().includes(q) ||
+        inv.jobs?.vehicles?.model?.toLowerCase().includes(q)
+      )
+    : invoices
+
   if (loading) return (
     <div className="flex items-center justify-center h-64 text-slate-500">
       <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading...
@@ -27,7 +40,10 @@ export default function InvoiceList() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-white">Invoices</h1>
-        <p className="text-slate-400 text-sm mt-0.5">{invoices.length} total invoices</p>
+        <p className="text-slate-400 text-sm mt-0.5">
+          {search ? `${filtered.length} of ${invoices.length}` : invoices.length} invoice{invoices.length !== 1 ? 's' : ''}
+          {search ? ` matching "${search}"` : ''}
+        </p>
       </div>
 
       {invoices.length === 0 ? (
@@ -35,9 +51,14 @@ export default function InvoiceList() {
           <Receipt className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p>No invoices yet</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-slate-500">
+          <Receipt className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>No results for "{search}"</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {invoices.map(inv => (
+          {filtered.map(inv => (
             <div
               key={inv.id}
               onClick={() => navigate(`/receptionist/jobs/${inv.job_id}`)}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { useSearch } from '../../context/SearchContext'
 import { formatAED, formatDate, formatDateTime, quoteStatusColor } from '../../lib/utils'
 import {
   ClipboardList, PlusCircle, Search, ChevronRight,
@@ -15,10 +16,12 @@ export default function QuoteList() {
   const navigate = useNavigate()
   const isReceptionist = user?.role === 'receptionist'
 
+  const { search: globalSearch } = useSearch()
   const [quotes, setQuotes]         = useState([])
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [statusFilter, setStatus]   = useState('all')
+  const activeSearch = globalSearch || search
 
   const fetchQuotes = useCallback(async () => {
     // Auto-expire stale quotes
@@ -44,10 +47,10 @@ export default function QuoteList() {
 
   const filtered = quotes.filter(q => {
     const matchStatus = statusFilter === 'all' || q.status === statusFilter
-    const matchSearch =
-      q.quote_number.toLowerCase().includes(search.toLowerCase()) ||
-      q.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-      (q.vehicle_info || '').toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !activeSearch ||
+      q.quote_number.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      q.customer_name.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      (q.vehicle_info || '').toLowerCase().includes(activeSearch.toLowerCase())
     return matchStatus && matchSearch
   })
 

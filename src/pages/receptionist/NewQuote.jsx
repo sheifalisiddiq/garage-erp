@@ -7,16 +7,19 @@ import {
   ArrowLeft, User, Car, Wrench, Package, ClipboardList,
   Search, Trash2, Loader2, ChevronDown, PlusCircle, Mail
 } from 'lucide-react'
+import ImageScanButton from '../../components/ImageScanButton'
+import VoiceInputButton from '../../components/VoiceInputButton'
 
 const inputCls = 'w-full bg-surface-600 border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-500 transition'
 const labelCls = 'block text-xs text-slate-400 mb-1.5 font-medium'
 
-function Section({ title, icon: Icon, children }) {
+function Section({ title, icon: Icon, action, children }) {
   return (
     <div className="bg-surface-700 border border-white/[0.06] rounded-2xl overflow-hidden">
       <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
         <Icon className="w-4 h-4 text-slate-400" />
-        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">{title}</h3>
+        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex-1">{title}</h3>
+        {action}
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -214,14 +217,35 @@ export default function NewQuote() {
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 className="text-xl font-bold text-white tracking-tight">New Quotation</h1>
           <p className="text-sm text-slate-500 mt-0.5">Create a quote for a customer</p>
         </div>
+        <VoiceInputButton
+          onResult={(fields) => {
+            if (fields.customerName) setCustomerName(fields.customerName)
+            if (fields.customerPhone) setCustomerPhone(fields.customerPhone)
+            if (fields.customerEmail) setCustomerEmail(fields.customerEmail)
+            if (fields.vehicleMake) setVehicleMake(fields.vehicleMake)
+            if (fields.vehicleModel) setVehicleModel(fields.vehicleModel)
+            if (fields.licensePlate) setVehiclePlate(fields.licensePlate)
+            if (fields.vehicleYear) setVehicleYear(fields.vehicleYear)
+          }}
+        />
       </div>
 
       {/* Customer */}
-      <Section title="Customer" icon={User}>
+      <Section title="Customer" icon={User} action={
+        <ImageScanButton
+          scanType="card"
+          title="Scan business card to auto-fill"
+          onResult={(data) => {
+            if (data.customerName) setCustomerName(data.customerName)
+            if (data.customerPhone) setCustomerPhone(data.customerPhone)
+            if (data.customerEmail) setCustomerEmail(data.customerEmail)
+          }}
+        />
+      }>
         <div className="space-y-4">
           <div className="flex gap-2">
             <div className="flex-1">
@@ -276,7 +300,18 @@ export default function NewQuote() {
       </Section>
 
       {/* Vehicle */}
-      <Section title="Vehicle" icon={Car}>
+      <Section title="Vehicle" icon={Car} action={
+        <ImageScanButton
+          scanType="plate"
+          title="Scan license plate to auto-fill"
+          onResult={(data) => {
+            if (data.licensePlate) setVehiclePlate(data.licensePlate)
+            if (data.vehicleMake) setVehicleMake(data.vehicleMake)
+            if (data.vehicleModel) setVehicleModel(data.vehicleModel)
+            if (data.vehicleYear) setVehicleYear(data.vehicleYear)
+          }}
+        />
+      }>
         <div className="space-y-4">
           {existingVehicles.length > 0 && (
             <div>

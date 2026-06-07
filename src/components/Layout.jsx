@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useSearch } from '../context/SearchContext'
+import { supabase } from '../lib/supabase'
 import {
   Wrench, LayoutDashboard, PlusCircle, FileText,
   LogOut, Activity, ClipboardList,
   Bell, Settings, Sun, Moon,
   Search, Menu, X,
-  Boxes, ShieldCheck
+  Boxes, ShieldCheck, Package, Clock, CheckCircle2
 } from 'lucide-react'
 
 /* ── Nav configuration ───────────────────────────────── */
@@ -118,11 +119,138 @@ function SidebarContent({ user, onNavClick, onLogout }) {
   )
 }
 
+/* ── Notification panel ──────────────────────────────── */
+function NotificationPanel({ onClose }) {
+  const [lowStock, setLowStock] = useState([])
+  const [overdueJobs, setOverdueJobs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const panelRef = useRef(null)
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      setLoading(true)
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+
+      const [stockRes, jobsRes] = await Promise.all([
+        supabase.from('parts').select('name, quantity, min_quantity').not('min_quantity', 'is', null),
+        supabase.from('jobs')
+          .select('job_number, created_at, customers(name)')
+          .eq('status', 'open')
+          .lt('created_at', threeDaysAgo)
+          .order('created_at', { ascending: true })
+          .limit(10),
+      ])
+
+      const lowItems = (stockRes.data || []).filter(p => p.quantity <= p.min_quantity)
+      setLowStock(lowItems)
+      setOverdueJobs(jobsRes.data || [])
+      setLoading(false)
+    }
+    fetchNotifs()
+  }, [])
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) onClose()
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [onClose])
+
+  const total = lowStock.length + overdueJobs.length
+
+  return (
+    <div
+      ref={panelRef}
+      style={{
+        position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 200,
+        width: 320, maxHeight: 420, overflowY: 'auto',
+        background: 'var(--card)', border: '1px solid var(--border)',
+        borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        padding: '12px 0',
+      }}
+    >
+      <div style={{ padding: '0 16px 8px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+        <span style={{ fontWeight: 600, fontSize: 13 }}>Notifications</span>
+        {total > 0 && (
+          <span style={{
+            marginLeft: 8, fontSize: 11, background: 'var(--destructive)', color: '#fff',
+            borderRadius: 999, padding: '1px 7px',
+          }}>{total}</span>
+        )}
+      </div>
+
+      {loading && (
+        <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 13 }}>
+          Loading…
+        </div>
+      )}
+
+      {!loading && total === 0 && (
+        <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+          <CheckCircle2 size={24} style={{ color: 'var(--text-dim)', margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>All clear</div>
+        </div>
+      )}
+
+      {!loading && lowStock.length > 0 && (
+        <>
+          <div style={{ padding: '4px 16px 6px', fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Low Stock
+          </div>
+          {lowStock.map((p, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
+              <Package size={14} style={{ color: '#f87171', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, truncate: true }}>{p.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Qty: {p.quantity} / min {p.min_quantity}</div>
+              </div>
+              <span style={{ fontSize: 10, background: 'rgba(248,113,113,0.15)', color: '#f87171', borderRadius: 999, padding: '2px 8px' }}>
+                Low
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+
+      {!loading && overdueJobs.length > 0 && (
+        <>
+          <div style={{ padding: '8px 16px 6px', fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: lowStock.length ? '1px solid var(--border)' : undefined, marginTop: lowStock.length ? 4 : 0 }}>
+            Open &gt; 3 Days
+          </div>
+          {overdueJobs.map((j, i) => {
+            const days = Math.floor((Date.now() - new Date(j.created_at)) / 86400000)
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
+                <Clock size={14} style={{ color: '#fbbf24', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500 }}>{j.job_number}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{j.customers?.name}</div>
+                </div>
+                <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#fbbf24', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                  {days}d open
+                </span>
+              </div>
+            )
+          })}
+        </>
+      )}
+    </div>
+  )
+}
+
 /* ── Top bar ─────────────────────────────────────────── */
 function TopBar({ theme, toggleTheme, onMenuOpen, user }) {
   const { search, setSearch } = useSearch()
+  const navigate = useNavigate()
+  const [notifOpen, setNotifOpen] = useState(false)
+  const bellRef = useRef(null)
   const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??'
   const email    = user?.email || `${(user?.name || '').toLowerCase().replace(/\s+/g, '.')}@pitstop.shop`
+
+  const settingsPath = user?.role === 'manager' || user?.role === 'admin'
+    ? '/manager/settings'
+    : '/receptionist/settings'
 
   return (
     <header className="topbar">
@@ -141,7 +269,7 @@ function TopBar({ theme, toggleTheme, onMenuOpen, user }) {
       <div className="searchbar">
         <Search size={16} />
         <input
-          placeholder="Ask Pitstop AI — vehicle, plate, customer…"
+          placeholder="Search jobs, plates, customers…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           aria-label="Search"
@@ -159,11 +287,28 @@ function TopBar({ theme, toggleTheme, onMenuOpen, user }) {
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
-        <button className="icon-btn" title="Notifications" aria-label="Notifications">
-          <Bell size={16} />
-          <span className="dot" />
-        </button>
-        <button className="icon-btn" title="Settings" aria-label="Settings">
+
+        {/* Notification bell */}
+        <div ref={bellRef} style={{ position: 'relative' }}>
+          <button
+            className="icon-btn"
+            title="Notifications"
+            aria-label="Notifications"
+            onClick={() => setNotifOpen(v => !v)}
+          >
+            <Bell size={16} />
+            <span className="dot" />
+          </button>
+          {notifOpen && <NotificationPanel onClose={() => setNotifOpen(false)} />}
+        </div>
+
+        {/* Settings */}
+        <button
+          className="icon-btn"
+          title="Settings"
+          aria-label="Settings"
+          onClick={() => navigate(settingsPath)}
+        >
           <Settings size={16} />
         </button>
 
